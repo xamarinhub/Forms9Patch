@@ -1684,7 +1684,7 @@ namespace Forms9Patch
             {
                 if (HasTightSpacing)
                 {
-                    if (_iconImage != null)
+                    if (_iconImage != null && !_iconImage.FillOrLayoutSet)
                     {
                         _iconImage.HorizontalOptions = LayoutOptions.Center;
                         _iconImage.VerticalOptions = vertOption;
@@ -1710,7 +1710,7 @@ namespace Forms9Patch
                 }
                 else
                 {
-                    if (_iconImage != null)
+                    if (_iconImage != null && !_iconImage.FillOrLayoutSet)
                     {
                         _iconImage.HorizontalOptions = LayoutOptions.Center; // (TrailingIcon ? LayoutOptions.End : LayoutOptions.Start);
                         _iconImage.VerticalOptions = vertOption;
@@ -1739,7 +1739,7 @@ namespace Forms9Patch
             {
                 if (HasTightSpacing)
                 {
-                    if (_iconImage != null)
+                    if (_iconImage != null && !_iconImage.FillOrLayoutSet)
                     {
                         _iconImage.HorizontalOptions = horzOption;// LayoutOptions.CenterAndExpand;
                         _iconImage.VerticalOptions = LayoutOptions.Center;
@@ -1766,7 +1766,7 @@ namespace Forms9Patch
                 }
                 else
                 {
-                    if (_iconImage != null)
+                    if (_iconImage != null && !_iconImage.FillOrLayoutSet)
                     {
                         _iconImage.HorizontalOptions = horzOption;// LayoutOptions.CenterAndExpand;
                         _iconImage.VerticalOptions = (TrailingIcon ? LayoutOptions.End : LayoutOptions.Start);

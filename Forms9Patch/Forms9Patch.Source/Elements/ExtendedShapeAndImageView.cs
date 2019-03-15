@@ -717,6 +717,11 @@ namespace Forms9Patch
                 return;
             }
 
+            if (propertyName == HorizontalOptionsProperty.PropertyName
+                || propertyName == VerticalOptionsProperty.PropertyName
+                || propertyName == FillProperty.PropertyName)
+                FillOrLayoutSet = true;
+
             base.OnPropertyChanged(propertyName);
 
             if (propertyName == ElementShapeProperty.PropertyName)
