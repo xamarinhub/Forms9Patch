@@ -1,39 +1,44 @@
-using System;
+﻿using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using P42.Utils;
 using Xamarin.Forms;
 using Xamarin.Forms.Internals;
 
 namespace Forms9Patch
 {
 
+    [DesignTimeVisible(true)]
+    [Xamarin.Forms.Internals.Preserve(AllMembers = true)]
     internal class HeaderCell<TContent> : Cell<TContent> where TContent : View, new()
     {
-        public HeaderCell() : base()
-        {
-            BaseCellView.IsHeader = true;
-        }
+        public HeaderCell()
+            => BaseCellView.IsHeader = true;
+
     }
 
 
+    [DesignTimeVisible(true)]
     // the non-group header version of Cell
+    [Xamarin.Forms.Internals.Preserve(AllMembers = true)]
     internal class ItemCell<TContent> : Cell<TContent> where TContent : View, new()
     {
-        public ItemCell() : base()
-        {
-            BaseCellView.IsHeader = false;
-        }
+        public ItemCell()
+            => BaseCellView.IsHeader = false;
+
     }
 
+    [DesignTimeVisible(true)]
     // The purpose of this class it to:
     // - capture and manage the height of Forms9Patch.ListView cells
     // - set proper BindingContext to a cell's content view 
     // In the future, it may be also to manage cell separators.
+    [Xamarin.Forms.Internals.Preserve(AllMembers = true)]
     internal class Cell<TContent> : ViewCell, ICell_T_Height, IDisposable where TContent : View, new()
     {
         #region debug convenience
-        protected bool Debug
+        protected static bool Debug
         {
             get
             {
@@ -99,18 +104,15 @@ namespace Forms9Patch
         /// <param name="propertyName">Property name.</param>
         protected override void OnPropertyChanging(string propertyName = null)
         {
-            if (!P42.Utils.Environment.IsOnMainThread)
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
             {
-                Device.BeginInvokeOnMainThread(() => OnPropertyChanging(propertyName));
-                return;
-            }
+                base.OnPropertyChanging(propertyName);
 
-            base.OnPropertyChanging(propertyName);
-
-            if (propertyName == BindingContextProperty.PropertyName && View != null)
-                View.BindingContext = null;
-            else if (propertyName == nameof(Height))
-                _oldHeight = Height;
+                if (propertyName == BindingContextProperty.PropertyName && View != null)
+                    View.BindingContext = null;
+                else if (propertyName == nameof(Height))
+                    _oldHeight = Height;
+            });
         }
 
         /// <summary>
@@ -118,23 +120,24 @@ namespace Forms9Patch
         /// </summary>
         protected override void OnBindingContextChanged()
         {
-            if (!P42.Utils.Environment.IsOnMainThread)
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
             {
-                Device.BeginInvokeOnMainThread(OnBindingContextChanged);
-                return;
-            }
-
-            _freshHeight = true;
-            _oldHeight = -1;
-            if (View != null)
-                View.BindingContext = BindingContext;
-
-            base.OnBindingContextChanged();
+                _freshHeight = true;
+                _oldHeight = -1;
+                if (View != null)
+                    View.BindingContext = BindingContext;
+                base.OnBindingContextChanged();
+            });
         }
 
         protected override void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
-            base.OnPropertyChanged(propertyName);
+            try
+            {
+                base.OnPropertyChanged(propertyName);
+            }
+            catch (Exception) { }
+
             // don't know why the below "&& UWP" was added.  A really bone headed move.
             if (propertyName == nameof(Height))// && Device.RuntimePlatform == Device.UWP)
             {
@@ -147,7 +150,6 @@ namespace Forms9Patch
 
         bool _updatingSize;
         async Task UpdateSizeAsync()
-        //void UpdateSize()
         {
             if (_updatingSize || _freshHeight || _oldHeight < 1)
                 return;
@@ -159,11 +161,27 @@ namespace Forms9Patch
         }
         #endregion
 
-
+        int _appearances;
         protected override void OnAppearing()
         {
             base.OnAppearing();
             BaseCellView?.OnAppearing();
+
+            _appearances++;
+            if (View.Width < 0 || View.Height < 0)
+            {
+                Device.StartTimer(TimeSpan.FromMilliseconds(200), () =>
+                {
+                    if (View.Width < 0 || View.Height < 0)
+                    {
+                        System.Diagnostics.Debug.WriteLine("Cell.OnAppearing _appearances=[" + (_appearances) + "] BindingContext[" + BindingContext + "] View.IsVisible[" + View.IsVisible + "] View.Opacity[" + View.Opacity + "] View.Bounds[" + View.Bounds + "]");
+                        View.IsVisible = !View.IsVisible;
+                        return true;
+                    }
+                    View.IsVisible = true;
+                    return false;
+                });
+            }
         }
 
         protected override void OnDisappearing()

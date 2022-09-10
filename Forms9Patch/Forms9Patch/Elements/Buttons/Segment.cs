@@ -1,7 +1,7 @@
 ﻿using System;
 using Xamarin.Forms;
 using System.Windows.Input;
-using System.Collections.Generic;
+using System.ComponentModel;
 using System.Reflection;
 
 namespace Forms9Patch
@@ -9,45 +9,11 @@ namespace Forms9Patch
     /// <summary>
     /// Model for Segment.
     /// </summary>
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     [ContentProperty(nameof(HtmlText))]
-    public class Segment : BindableObject, ISegment
+    public class Segment : Element, ISegment, IDisposable
     {
-        #region Obsolete Properties
-        /// <summary>
-        /// OBSOLETE: Use TextColorProperty
-        /// </summary>
-        [Obsolete("Use TextColorProperty")]
-        public static readonly BindableProperty FontColorProperty = BindableProperty.Create(nameof(FontColor), typeof(Color), typeof(Segment), Color.Default);
-        /// <summary>
-        /// OBSOLETE: Use TextColor
-        /// </summary>
-        /// <value>The color of the font.</value>
-        [Obsolete("Use TextColor")]
-        public Color FontColor
-        {
-            get { throw new NotSupportedException("Use TextColor"); }
-            set { throw new NotSupportedException("Use TextColor"); }
-        }
-
-        /// <summary>
-        /// Backing store for the Image bindable property.
-        /// </summary>
-        [Obsolete("Use IconImageProperty instead")]
-        public static BindableProperty ImageSourceProperty = BindableProperty.Create(nameof(ImageSource), typeof(Xamarin.Forms.ImageSource), typeof(Segment), null);
-        /// <summary>
-        /// Gets or sets the companion image for this this <see cref="Segment"/> - alternative to IconText.
-        /// </summary>
-        /// <value>The image.</value>
-        [Obsolete("Use IconImage instead")]
-        public Xamarin.Forms.ImageSource ImageSource
-        {
-            get { throw new NotSupportedException("Use IconImage instead"); }
-            set { throw new NotSupportedException("Use IconImage instead"); }
-        }
-
-        #endregion
-
-
         #region ISegment properties
 
         #region IconImage property
@@ -80,6 +46,36 @@ namespace Forms9Patch
             set => SetValue(IconTextProperty, value);
         }
         #endregion IconText property
+
+        #region IconFontFamily
+        /// <summary>
+        /// Backing store for Segment IconFontFamily property
+        /// </summary>
+        public static readonly BindableProperty IconFontFamilyProperty = BindableProperty.Create(nameof(IconFontFamily), typeof(string), typeof(Segment), default);
+        /// <summary>
+        /// controls value of .IconFontFamily property
+        /// </summary>
+        public string IconFontFamily
+        {
+            get => (string)GetValue(IconFontFamilyProperty);
+            set => SetValue(IconFontFamilyProperty, value);
+        }
+        #endregion
+
+        #region IconFontSize
+        /// <summary>
+        /// Backing store for Segment IconFontSize property
+        /// </summary>
+        public static readonly BindableProperty IconFontSizeProperty = BindableProperty.Create(nameof(IconFontSize), typeof(double), typeof(Segment), -1.0);
+        /// <summary>
+        /// controls value of .IconFontSize property
+        /// </summary>
+        public double IconFontSize
+        {
+            get => (double)GetValue(IconFontSizeProperty);
+            set => SetValue(IconFontSizeProperty, value);
+        }
+        #endregion
 
         #region Text property
         /// <summary>
@@ -222,10 +218,8 @@ namespace Forms9Patch
         /// </remarks>
         public ICommand Command
         {
-            //get { return (ICommand)GetValue (CommandProperty); }
-            //set { SetValue (CommandProperty, value); }
-            get => _button.Command;
-            set => _button.Command = value;
+            get => (ICommand)GetValue(CommandProperty);
+            set => SetValue(CommandProperty, value);
         }
         #endregion ICommand property
 
@@ -247,8 +241,8 @@ namespace Forms9Patch
         /// <remarks/>
         public object CommandParameter
         {
-            get => _button.CommandParameter;
-            set => _button.CommandParameter = value;
+            get => GetValue(CommandParameterProperty);
+            set => SetValue(CommandParameterProperty, value);
         }
         #endregion ICommandParameter property
 
@@ -326,42 +320,9 @@ namespace Forms9Patch
         public Segment()
         {
             _button = new SegmentButton();
-            _button.PropertyChanged += (object sender, System.ComponentModel.PropertyChangedEventArgs e) =>
-            {
-                switch (e.PropertyName)
-                {
-                    case nameof(IconImage):
-                        IconImage = _button.IconImage;
-                        break;
-                    case nameof(IconText):
-                        IconText = _button.IconText;
-                        break;
-                    case nameof(Text):
-                        Text = _button.Text;
-                        break;
-                    case nameof(HtmlText):
-                        HtmlText = _button.HtmlText;
-                        break;
-                    case nameof(TextColor):
-                        TextColor = _button.TextColor;
-                        break;
-                    case nameof(FontAttributes):
-                        FontAttributes = _button.FontAttributes;
-                        break;
-                    case nameof(IsEnabled):
-                        IsEnabled = _button.IsEnabled;
-                        break;
-                    case nameof(IsSelected):
-                        IsSelected = _button.IsSelected;
-                        break;
-                    case nameof(Orientation):
-                        Orientation = _button.Orientation;
-                        break;
-                    default:
-                        break;
-                }
-            };
+            _button.PropertyChanged += OnButtonPropertyChanged;
         }
+
 
         /// <summary>
         /// Instantiates an new Segment and sets its Text and imageSource properties
@@ -401,7 +362,7 @@ namespace Forms9Patch
 
             assembly = assembly ?? AssemblyExtensions.AssemblyFromResourceId(icon);
             if (assembly == null && Device.RuntimePlatform != Device.UWP)
-                assembly = (Assembly)typeof(Assembly).GetTypeInfo().GetDeclaredMethod("GetCallingAssembly").Invoke(null, new object[0]);
+                assembly = (Assembly)typeof(Assembly).GetTypeInfo().GetDeclaredMethod("GetCallingAssembly").Invoke(null, Array.Empty<object>());
 
             var match = Forms9Patch.ImageSource.BestEmbeddedMultiResourceMatch(icon, assembly);
 
@@ -421,10 +382,86 @@ namespace Forms9Patch
                 IconImage = new Forms9Patch.Image(icon, assembly);
             }
         }
+
+        private bool _disposed;
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed && disposing)
+            {
+                _disposed = true;
+
+                if (Command != null)
+                    Command.CanExecuteChanged -= CommandCanExecuteChanged;
+
+                _button.PropertyChanged -= OnButtonPropertyChanged;
+                _button.IconImage = null;
+                _button.BackgroundImage = null;
+                _button.Dispose();
+
+                IconImage?.Dispose();
+                IconImage = null;
+            }
+        }
+
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
         #endregion Constuctor
 
 
         #region PropertyChanged responder
+        void OnButtonPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            switch (e.PropertyName)
+            {
+                case nameof(IconImage):
+                    IconImage = _button.IconImage;
+                    break;
+                case nameof(IconText):
+                    IconText = _button.IconText;
+                    break;
+                case nameof(Text):
+                    Text = _button.Text;
+                    break;
+                case nameof(HtmlText):
+                    HtmlText = _button.HtmlText;
+                    break;
+                case nameof(TextColor):
+                    TextColor = _button.TextColor;
+                    break;
+                case nameof(FontAttributes):
+                    FontAttributes = _button.FontAttributes;
+                    break;
+                case nameof(IconFontFamily):
+                    IconFontFamily = _button.InternalIconFontFamily;
+                    break;
+                case nameof(IconFontSize):
+                    IconFontSize = _button.InternalIconFontSize;
+                    break;
+                case nameof(IsEnabled):
+                    IsEnabled = _button.IsEnabled;
+                    break;
+                case nameof(IsSelected):
+                    IsSelected = _button.IsSelected;
+                    break;
+                case nameof(Orientation):
+                    Orientation = _button.Orientation;
+                    break;
+                default:
+                    break;
+            }
+        }
+
         /// <summary>
         /// Ons the property changed.
         /// </summary>
@@ -432,46 +469,57 @@ namespace Forms9Patch
         /// <param name="propertyName">Property name.</param>
         protected override void OnPropertyChanged(string propertyName = null)
         {
-            if (!P42.Utils.Environment.IsOnMainThread)
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
             {
-                Device.BeginInvokeOnMainThread(() => OnPropertyChanged(propertyName));
-                return;
-            }
 
-            base.OnPropertyChanged(propertyName);
+                try
+                {
+                    base.OnPropertyChanged(propertyName);
+                }
+                catch (Exception) { }
 
-            switch (propertyName)
-            {
-                case nameof(IconImage):
-                    _button.IconImage = IconImage;
-                    break;
-                case nameof(IconText):
-                    _button.IconText = IconText;
-                    break;
-                case nameof(Text):
-                    _button.Text = Text;
-                    break;
-                case nameof(HtmlText):
-                    _button.HtmlText = HtmlText;
-                    break;
-                case nameof(TextColor):
-                    _button.TextColor = TextColor;
-                    break;
-                case nameof(FontAttributes):
-                    _button.FontAttributes = FontAttributes;
-                    break;
-                case nameof(IsEnabled):
-                    _button.IsEnabled = IsEnabled;
-                    break;
-                case nameof(IsSelected):
-                    _button.IsSelected = IsSelected;
-                    break;
-                case nameof(Orientation):
-                    _button.Orientation = Orientation;
-                    break;
-                default:
-                    break;
-            }
+                switch (propertyName)
+                {
+                    case nameof(IconImage):
+                        _button.IconImage = IconImage;
+                        break;
+                    case nameof(IconText):
+                        _button.IconText = IconText;
+                        break;
+                    case nameof(Text):
+                        _button.Text = Text;
+                        break;
+                    case nameof(HtmlText):
+                        _button.HtmlText = HtmlText;
+                        break;
+                    case nameof(TextColor):
+                        _button.TextColor = TextColor;
+                        break;
+                    case nameof(FontAttributes):
+                        _button.FontAttributes = FontAttributes;
+                        break;
+                    case nameof(IconFontFamily):
+                        _button.InternalIconFontFamily = IconFontFamily;
+                        break;
+                    case nameof(IconFontSize):
+                        _button.InternalIconFontSize = IconFontSize;
+                        break;
+                    case nameof(IsEnabled):
+                        _button.IsEnabled = IsEnabled;
+                        break;
+                    case nameof(IsSelected):
+                        _button.IsSelected = IsSelected;
+                        break;
+                    case nameof(Orientation):
+                        _button.Orientation = Orientation;
+                        break;
+                    case nameof(Command):
+                        System.Diagnostics.Debug.WriteLine("COMMAND PROPERTY CHANGED");
+                        break;
+                    default:
+                        break;
+                }
+            });
         }
         #endregion
 
@@ -498,6 +546,7 @@ namespace Forms9Patch
         #region Property Change management
         void OnCommandChanged()
         {
+            _button.Command = Command;
             if (Command != null)
             {
                 Command.CanExecuteChanged += CommandCanExecuteChanged;
@@ -509,16 +558,13 @@ namespace Forms9Patch
 
         void CommandCanExecuteChanged(object sender, EventArgs eventArgs)
         {
+            _button.CommandParameter = CommandParameter;
             var command = Command;
             if (command == null)
                 return;
             //IsEnabledCore = command.CanExecute(CommandParameter);
         }
         #endregion Property Change management
-
-
-
-
     }
 }
 

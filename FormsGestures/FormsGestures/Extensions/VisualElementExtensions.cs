@@ -13,18 +13,6 @@ namespace FormsGestures
     {
         //public static readonly BindableProperty InterceptGesturesProperty = BindableProperty.Create("InterceptGestures",typeof(bool),typeof(Listener),false);
 
-        /*
-		public static readonly BindableProperty IgnoreChildrenTouchesProperty = BindableProperty.Create("IngoreChildrenTouches",typeof(bool),typeof(VisualElement),false);
-
-		public static void set_IgnoreChildrenTouches(this VisualElement element, bool ignore) {
-			element.SetValue (IgnoreChildrenTouchesProperty, ignore);
-		}
-
-		public static bool get_IgnoreChildrenTouches(this VisualElement element) {
-			return (bool)element.GetValue (IgnoreChildrenTouchesProperty);
-		}
-		*/
-
 
         static ICoordTransform _service;
         static ICoordTransform Service
@@ -61,19 +49,16 @@ namespace FormsGestures
         /// <param name="child"></param>
         /// <returns></returns>
         public static bool IsAncestorOf(this Element ancestor, Element child)
-        {
-            return child.IsDescendentOf(ancestor);
-        }
+            => child.IsDescendentOf(ancestor);
+        
 
         /// <summary>
         /// Translates the bounds of an element to the coordinates of app's window
         /// </summary>
-        /// <param name="fromElement"></param>
+        /// <param name="element"></param>
         /// <returns></returns>
-        public static Rectangle BoundsToWinCoord(this VisualElement fromElement)
-        {
-            return fromElement.BoundsToEleCoord(Application.Current.MainPage);
-        }
+        public static Rectangle BoundsInWindowCoord(this VisualElement element)
+            => Service.BoundsInWindowCoord(element);
 
         /// <summary>
         /// Translates the bounds of an element to the coordinates of another, reference element
@@ -81,20 +66,26 @@ namespace FormsGestures
         /// <param name="fromElement"></param>
         /// <param name="toElement"></param>
         /// <returns></returns>
-        public static Rectangle BoundsToEleCoord(this VisualElement fromElement, VisualElement toElement)
-        {
-            return Service.CoordTransform(fromElement, fromElement.Bounds, toElement);
-        }
+        public static Rectangle BoundsInElementCoord(this VisualElement fromElement, VisualElement toElement)
+            => Service.CoordTransform(fromElement, fromElement.Bounds, toElement);
+        
 
         /// <summary>
         /// Translates the location of an element to the app's window's coordinates
         /// </summary>
-        /// <param name="fromElement"></param>
+        /// <param name="element"></param>
         /// <returns></returns>
-        public static Point LocationToWinCoord(this VisualElement fromElement)
-        {
-            return fromElement.LocationToEleCoord(Application.Current.MainPage);
-        }
+        public static Point LocationInWindowCoord(this VisualElement element)
+            => Service.PointInWindowCoord(element, Point.Zero);
+
+        /// <summary>
+        /// Returns a point (in a view) to the DIP Screen coordinates
+        /// </summary>
+        /// <param name="element"></param>
+        /// <param name="p"></param>
+        /// <returns></returns>
+        public static Point PointInWindowCoord(this VisualElement element, Point p)
+            => Service.PointInWindowCoord(element, p);
 
         /// <summary>
         /// Translates the location of an element to the coordinates of another, reference element
@@ -102,10 +93,19 @@ namespace FormsGestures
         /// <param name="fromElement"></param>
         /// <param name="toElement"></param>
         /// <returns></returns>
-        public static Point LocationToEleCoord(this VisualElement fromElement, VisualElement toElement)
-        {
-            return Service.CoordTransform(fromElement, fromElement.Bounds.Location, toElement);
-        }
+        public static Point LocationInElementCoord(this VisualElement fromElement, VisualElement toElement)
+            => Service.CoordTransform(fromElement, Point.Zero, toElement);
+
+        /// <summary>
+        /// Translates a point from its local view coordinates to that of another view
+        /// </summary>
+        /// <param name="fromElement"></param>
+        /// <param name="p"></param>
+        /// <param name="toElement"></param>
+        /// <returns></returns>
+        public static Point PointInElementCoord(this VisualElement fromElement, Point p, VisualElement toElement)
+            => Service.CoordTransform(fromElement, p, toElement);
+
 
         /// <summary>
         /// determines if point in this element is withing the bounds of another, test element
@@ -118,50 +118,6 @@ namespace FormsGestures
         {
             var testPoint = CoordTransform(hitElement, hitPoint, targetElement);
             return targetElement.Bounds.Contains(testPoint);
-        }
-
-        /// <summary>
-        /// translates a point in this element's coordinate space to the app's window's coordintate space
-        /// </summary>
-        /// <param name="fromElement"></param>
-        /// <param name="fromPoint"></param>
-        /// <returns></returns>
-        public static Point ToWinCoord(this VisualElement fromElement, Point fromPoint)
-        {
-            return fromElement.ToEleCoord(fromPoint, Application.Current.MainPage);
-        }
-
-        /// <summary>
-        /// translates a point in this element's coordinate space to the coordinate space of another, reference element
-        /// </summary>
-        /// <param name="fromElement"></param>
-        /// <param name="fromPoint"></param>
-        /// <param name="toElement"></param>
-        /// <returns></returns>
-        public static Point ToEleCoord(this VisualElement fromElement, Point fromPoint, VisualElement toElement)
-        {
-            return Service.CoordTransform(fromElement, fromPoint, toElement);
-        }
-
-        /// <summary>
-        /// translates a point in the app's window coordinate space to that of this element
-        /// </summary>
-        /// <param name="fromElement"></param>
-        /// <param name="fromPoint"></param>
-        /// <returns></returns>
-        public static Point WinToEleCoord(this VisualElement fromElement, Point fromPoint)
-        {
-            return Service.CoordTransform(Application.Current.MainPage, fromPoint, fromElement);
-        }
-        /// <summary>
-        /// translates a rectangle from the app's window coordinates to that of this element
-        /// </summary>
-        /// <param name="fromElement"></param>
-        /// <param name="fromRectangle"></param>
-        /// <returns></returns>
-        public static Rectangle WinToEleCoord(this VisualElement fromElement, Rectangle fromRectangle)
-        {
-            return Service.CoordTransform(Application.Current.MainPage, fromRectangle, fromElement);
         }
 
         /// <summary>
@@ -254,7 +210,7 @@ namespace FormsGestures
         /// <returns></returns>
         public static List<T> FindVisualElementsWithPropertyAndOfType<T>(string propertyName) where T : VisualElement
         {
-            return FindChildrenWithPropertyAndOfType<T>(Xamarin.Forms.Application.Current.MainPage, propertyName);
+            return FindChildrenWithPropertyAndOfType<T>(Xamarin.Forms.Application.Current?.MainPage, propertyName);
         }
 
         /// <summary>
@@ -264,7 +220,7 @@ namespace FormsGestures
         /// <returns></returns>
         public static List<VisualElement> FindVisualElementsWithProperty(string propertyName)
         {
-            return FindChildrenWithPropertyAndOfType<VisualElement>(Xamarin.Forms.Application.Current.MainPage, propertyName);
+            return FindChildrenWithPropertyAndOfType<VisualElement>(Xamarin.Forms.Application.Current?.MainPage, propertyName);
         }
 
 
@@ -275,7 +231,7 @@ namespace FormsGestures
         /// <returns></returns>
         public static List<T> FindVisualElementsOfType<T>() where T : VisualElement
         {
-            return FindChildrenWithPropertyAndOfType<T>(Xamarin.Forms.Application.Current.MainPage, null);
+            return FindChildrenWithPropertyAndOfType<T>(Xamarin.Forms.Application.Current?.MainPage, null);
         }
 
         /// <summary>
@@ -284,7 +240,7 @@ namespace FormsGestures
         /// <returns>The focused.</returns>
         public static VisualElement FindFocused()
         {
-            return Xamarin.Forms.Application.Current.MainPage.FindChildWithFocus();
+            return Xamarin.Forms.Application.Current?.MainPage?.FindChildWithFocus();
         }
 
         /// <summary>

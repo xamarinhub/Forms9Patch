@@ -1,6 +1,6 @@
 # Forms9Patch
 
-A suite of elements built to simplify image management and text formatting for your NetStandard, PCL, and Shared Library Xamarin.Forms iOS, Android and UWP applications.
+A suite of elements built to simplify image management, text formatting, PNG generation, PDF generation, and printing for your NetStandard, PCL, and Shared Library Xamarin.Forms iOS, Android and UWP applications.
 
 ## Overview
 
@@ -14,12 +14,18 @@ Xamarin Forms is great for developing cross platform applications (certainly ver
 - Segmented button control
 - Pop-ups as a first class layout element
 - Multi-object Clipboard and Inter-app Data Sharing
+- PNG and PDF generation
+- Printing
 
 Android developers can use NinePatch bitmaps, the drawable directory naming convention, Html.FromHtml, and a bunch of complex file manipulations to address the image issue.  Likewise, iOS developers can use ResizeableImageWithCapInsets, the @2x, @3x, @4x file naming convention, and some 3rd party libraries for this purpose.  Custom fonts are a bit more complicated and label layouts take things up another notch.   Forms9Patch enhances Xamarin Forms to make multi-resolution / multi-screen image management, custom fonts, and HTML text formatting easy for NetStandard, PCL and Shared Library applications for iOS, Android and UWP.
 
 ## So, what exactly is Forms9Patch
 
-Simply stated, Forms9Patch is three core elements from which five layouts, three buttons, six pop-ups are built upon.  And, to make your life easier, some extensions, effects, and services are added.   The three core elements are:
+Forms9Patch is a package of VisualElements plus a suite of Services, and Effects.
+
+### Visual Elements
+
+Forms9Patch VisualElements is based upon three core elements from which five layouts, three buttons, and a number of pop-ups are built upon. The three core elements are:
 
 - `Forms9Patch.ImageSource`: a free to use derivative of `Xamarin.Forms.ImageSource` to support multi-device / multi-density image management from Embedded Resources.
 - `Forms9Patch.Image`: an enhanced implementation of `Xamarin.Forms.Image` with border (outline) and shadow properties  **_plus_** support of SVG vector images.  Raster images (.png, .jpg, .bmp) images also have patch scaling, tiling, and tinting support.
@@ -42,7 +48,7 @@ Forms9Patch's three button elements (`Forms9Patch.Button`, `Forms9Patch.StateBut
   - A button's icon or text can be arranged horizontally (default) or vertically (`Orientation` property set to `StackOrientation.Vertical`).
 - A label:
   - Specified either as plain text (`Text` property) or markup text (`HtmlText` property).
-  - Autofitting algorithms (see [Autofitting](guides/Label.md#Automatically-Resizing-Text-(Auto-fitting)) )
+  - Autofitting algorithms (see [Autofitting](guides/Label.md#autofitting---automatically-resizing-text) )
 - `LongPressing` and `LongPressed` touch events.
 
 The three Forms9Patch button elements are:
@@ -60,14 +66,11 @@ Forms9Patch's pop-up elements can be thought of as Forms9Patch layout elements (
 - `Forms9Patch.Toast`: a convenience element that presents a title, a message and an optional confirmation button.
 - `Forms9Patch.PermissionPopup`: a convenience element that presents a title, a message, and an accept and a decline button.
 - `Forms9Patch.TargetedToast`: similar to `Forms9Patch.Toast` but enhanced to point to a `Xamarin.Forms.VisualElement`.
+- `Forms9Patch.TargetedMenu`: A horizontal or vertical popup menu that can point to a `VisualElement`.
 
-Then there are Forms9Patch's extensions.  A few noteworthy ones are:
+### Services, and Effects
 
-- Color Extensions: Blend two colors, change a color's opacity, convert between Xamarin.Forms.Color and string representations.
-- WebView Extensions: Print the contents of a `Xamarin.Forms.WebView` (currently iOS and Android only).
-- HtmlString Extensions: Convert HTML markup to a PNG file.
-
-And lastly is Forms9Patch's services:
+And lastly is Forms9Patch's services and effects:
 
 - Keyboard Service: Want to put away the system keyboard?  Want to be notified when the system keyboard appears or disappears?
 - Keyboard Key Listener: What to know when a shortcut key is pressed?  What about matching a shortcut key to a VisualElement so you only get the event when that VisualElement is in focus?  
@@ -76,3 +79,9 @@ And lastly is Forms9Patch's services:
 - OS Info Service: What is the version of the device's operating system?
 - Clipboard: Copy/paste text, HTML text, and multiple objects (they can be of the same or different MIME types) within your app or to other apps.
 - Inter-app Data Sharing: Notice how some apps have a **Share** icon that presents a list of applications (and, on iOS services - like **Print**) to share data?  
+- ToPngService: Need a png of some HTML?  How about the contents of a WebView?
+- ToPdfService: Better yet, how about a PDF from some HTML or the content of a WebView?
+- PrintService: Wait - how about *printing* some HTML or the content of a WebView?  
+- DiskSize: How much space is in your app's sandbox?  How much is free?  How much is used?
+- EntryClearButtonEffect: want a clear button added to your Entry element?
+- EmbeddedResourceFortEffect: use embedded resource fonts with Xamarin text elements;

@@ -23,6 +23,7 @@
     <WarningLevel>4</WarningLevel>
     <ConsolePause>false</ConsolePause>
     <LangVersion>7.3</LangVersion>
+    <MtouchLink>SdkOnly</MtouchLink>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>full</DebugType>
@@ -32,6 +33,7 @@
     <WarningLevel>4</WarningLevel>
     <ConsolePause>false</ConsolePause>
     <LangVersion>7.3</LangVersion>
+    <MtouchLink>SdkOnly</MtouchLink>
   </PropertyGroup>
   <!-- System Packages-->
   <ItemGroup>
@@ -45,7 +47,7 @@
   <!-- Project References-->
   <ItemGroup>
     <ProjectReference Include="..\..\MimeSharp\MimeSharp\MimeSharp.csproj">
-      <Project>{FDDCCA71-9A68-43BC-97F1-73A55F551061}</Project>
+      <Project>{8913A168-C972-4548-9FE2-B09C05F9851B}</Project>
       <Name>MimeSharp</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\P42.Utils\P42.Utils.iOS\P42.Utils.iOS.csproj">
@@ -55,11 +57,11 @@
       <IsWatchApp>false</IsWatchApp>
     </ProjectReference>
     <ProjectReference Include="..\..\P42.Utils\P42.Utils\P42.Utils.csproj">
-      <Project>{A519F4E6-541B-4E7B-A700-6C2BB2019FE6}</Project>
+      <Project>{8A733CD3-9F71-4B04-9DEB-738B292941FC}</Project>
       <Name>P42.Utils</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\P42.Utils\P42.NumericalMethods\P42.NumericalMethods.csproj">
-      <Project>{8A7065F6-5428-457F-8C5B-1DE69A7E0C12}</Project>
+      <Project>{216141D7-1A9B-4707-A98E-ABCB2A249354}</Project>
       <Name>P42.NumericalMethods</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\FormsGestures\FormsGestures.iOS\FormsGestures.iOS.csproj">
@@ -69,11 +71,11 @@
       <IsWatchApp>false</IsWatchApp>
     </ProjectReference>
     <ProjectReference Include="..\Forms9Patch\Forms9Patch.csproj">
-      <Project>{82CD4E7C-872D-4A18-A368-652594BAAA49}</Project>
+      <Project>{30EA6687-B534-484D-B19A-7B0E0714A7CD}</Project>
       <Name>Forms9Patch</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\FormsGestures\FormsGestures\FormsGestures.csproj">
-      <Project>{2079B099-964B-4CFF-8EF6-9443B462258A}</Project>
+      <Project>{D8C279AA-DEC5-46C7-A2D5-32C497190924}</Project>
       <Name>FormsGestures</Name>
     </ProjectReference>
   </ItemGroup>
@@ -89,7 +91,6 @@
     <Compile Include="Effects\CustomFontEffect.cs" />
     <Compile Include="Effects\PopupLayerEffect.cs" />
     <Compile Include="Effects\SliderStepSizeEffect.cs" />
-    <Compile Include="Effects\WebViewFixEffect.cs" />
     <Compile Include="Extensions\AlignmentExtensions.cs" />
     <Compile Include="Extensions\Debug.cs" />
     <Compile Include="Extensions\FontExtensions.cs" />
@@ -101,37 +102,49 @@
     <Compile Include="Renderers\EnhancedListViewRenderer.cs" />
     <Compile Include="Renderers\HardwareKeyPageRenderer.cs" />
     <Compile Include="Renderers\LabelRenderer.cs" />
-    <Compile Include="Renderers\PopupBaseRenderer.cs" />
     <Compile Include="Services\ApplicationInfoService.cs" />
     <Compile Include="Services\DescendentBounds.cs" />
     <Compile Include="Services\FontService.cs" />
-    <Compile Include="Services\HtmlToPngService.cs" />
+    <Compile Include="Services\ToPngService.cs" />
     <Compile Include="Services\KeyboardService.cs" />
     <Compile Include="Services\OsInfoService.cs" />
     <Compile Include="Services\StatusBarService.cs" />
-    <Compile Include="Services\WebViewExtensionsService.cs" />
+    <Compile Include="Services\PrintService.cs" />
     <Compile Include="Reachability.cs" />
     <Compile Include="UIViewContentMode.cs" />
     <Compile Include="Services\HapticService.cs" />
     <Compile Include="Services\AudioService.cs" />
     <Compile Include="Models\TextControlState.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Extensions\PlatformExtensions.cs" />
+    <Compile Include="Popup\PopupPlatformIos.cs" />
+    <Compile Include="Popup\PopupWindow.cs" />
+    <Compile Include="Popup\PopupPlatformRenderer.cs" />
+    <Compile Include="Popup\PopupBaseRenderer.cs" />
+    <Compile Include="Popup\PopupPageRenderer.cs" />
+    <Compile Include="Effects\EntryClearButtonEffect.cs" />
+    <Compile Include="Services\ToPdfService.cs" />
+    <Compile Include="Services\RendererResolver.cs" />
+    <Compile Include="Effects\EntryNoOutlineEffect.cs" />
   </ItemGroup>
 
   <!-- NuGet Packages-->
   <ItemGroup>
     <PackageReference Include="Xamarin.Forms">
-      <Version>4.0.0.497661</Version>
+      <Version>5.0.0.2337</Version>
     </PackageReference>
     <PackageReference Include="Newtonsoft.Json">
-      <Version>12.0.2</Version>
-    </PackageReference>
-    <PackageReference Include="Rg.Plugins.Popup">
-      <Version>1.1.5.188</Version>
+      <Version>13.0.1</Version>
     </PackageReference>
     <PackageReference Include="SkiaSharp.Views.Forms">
-      <Version>1.68.0</Version>
+      <Version>2.80.3</Version>
     </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Popup\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Info.plist" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets" />
   <PropertyGroup>

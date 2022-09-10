@@ -1,8 +1,11 @@
 using System;
+using System.ComponentModel;
 using Xamarin.Forms;
 
 namespace Forms9Patch
 {
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     class SegmentButton : Forms9Patch.Button, IExtendedShape
     {
         #region ExtendedElementShapeOrientation property
@@ -20,6 +23,8 @@ namespace Forms9Patch
             set => SetValue(ExtendedElementShapeOrientationProperty, value);
         }
         #endregion
+
+        public event EventHandler<EventArgs> SegmentSelectionChanged;
 
         #region ExtendedElementShape property
         /// <summary>
@@ -52,25 +57,23 @@ namespace Forms9Patch
         /// <param name="propertyName">Property name.</param>
         protected override void OnPropertyChanged(string propertyName = null)
         {
-            if (!P42.Utils.Environment.IsOnMainThread)
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
             {
-                Device.BeginInvokeOnMainThread(() => OnPropertyChanged(propertyName));
-                return;
-            }
+                base.OnPropertyChanged(propertyName);
 
-            base.OnPropertyChanged(propertyName);
-
-            if (propertyName == ExtendedElementShapeProperty.PropertyName)
-            {
-                UpdateElements();
-                ((IExtendedShape)CurrentBackgroundImage).ExtendedElementShape = ((IExtendedShape)_fallbackBackgroundImage).ExtendedElementShape = ExtendedElementShape;
-            }
-            else if (propertyName == ExtendedElementSeparatorWidthProperty.PropertyName)
-                ((IExtendedShape)CurrentBackgroundImage).ExtendedElementSeparatorWidth = ((IExtendedShape)_fallbackBackgroundImage).ExtendedElementSeparatorWidth = ExtendedElementSeparatorWidth;
-            else if (propertyName == ExtendedElementShapeOrientationProperty.PropertyName)
-                ((IExtendedShape)CurrentBackgroundImage).ExtendedElementShapeOrientation = ((IExtendedShape)_fallbackBackgroundImage).ExtendedElementShapeOrientation = ExtendedElementShapeOrientation;
+                if (propertyName == ExtendedElementShapeProperty.PropertyName)
+                {
+                    UpdateElements();
+                    ((IExtendedShape)CurrentBackgroundImage).ExtendedElementShape = ((IExtendedShape)_fallbackBackgroundImage).ExtendedElementShape = ExtendedElementShape;
+                }
+                else if (propertyName == ExtendedElementSeparatorWidthProperty.PropertyName)
+                    ((IExtendedShape)CurrentBackgroundImage).ExtendedElementSeparatorWidth = ((IExtendedShape)_fallbackBackgroundImage).ExtendedElementSeparatorWidth = ExtendedElementSeparatorWidth;
+                else if (propertyName == ExtendedElementShapeOrientationProperty.PropertyName)
+                    ((IExtendedShape)CurrentBackgroundImage).ExtendedElementShapeOrientation = ((IExtendedShape)_fallbackBackgroundImage).ExtendedElementShapeOrientation = ExtendedElementShapeOrientation;
+                else if (propertyName == IsSelectedProperty.PropertyName)
+                    SegmentSelectionChanged?.Invoke(this, new EventArgs());
+            });
         }
-
 
         protected override void UpdateElements(bool isSegment = true) => base.UpdateElements(isSegment);
     }

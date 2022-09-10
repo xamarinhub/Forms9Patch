@@ -1,10 +1,13 @@
 ﻿using Xamarin.Forms;
+using System.ComponentModel;
 
 namespace Forms9Patch
 {
     /// <summary>
     /// Box view with a color gradient fill.  Don't count on this element sticking around for too long.
     /// </summary>
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     public class ColorGradientBox : Xamarin.Forms.View
     {
 
@@ -51,7 +54,7 @@ namespace Forms9Patch
         }
 
         static ColorGradientBox() => Settings.ConfirmInitialization();
-        
+
 
     }
 }

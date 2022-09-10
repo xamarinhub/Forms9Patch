@@ -11,6 +11,7 @@ using Xamarin.Forms.PlatformConfiguration;
 [assembly: Xamarin.Forms.Dependency(typeof(Forms9Patch.Droid.KeyboardService))]
 namespace Forms9Patch.Droid
 {
+    [Xamarin.Forms.Internals.Preserve(AllMembers = true)]
     public class KeyboardService : IKeyboardService
     {
         public bool IsHardwareKeyboardActive
@@ -130,6 +131,17 @@ namespace Forms9Patch.Droid
             var height = _startRect.Height() - currentRect.Height();
 
             HeightChanged?.Invoke(this, height / Display.Scale);
+        }
+
+        bool _disposed;
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && !_disposed)
+            {
+                _disposed = true;
+                _startRect?.Dispose();
+            }
+            base.Dispose(disposing);
         }
     }
 }

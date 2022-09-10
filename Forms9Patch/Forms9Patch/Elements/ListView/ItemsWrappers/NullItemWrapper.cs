@@ -1,14 +1,16 @@
-﻿using Xamarin.Forms;
+﻿using System.ComponentModel;
 
 namespace Forms9Patch
 {
-	class NullItemWrapper : ItemWrapper
-	{
-		public NullItemWrapper()
-		{
-			RemoveBinding(CellBackgroundColorProperty);
-		}
-	}
-    
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
+    class NullItemWrapper : ItemWrapper
+    {
+        public NullItemWrapper()
+        {
+            RemoveBinding(CellBackgroundColorProperty);
+        }
+    }
+
 }
 

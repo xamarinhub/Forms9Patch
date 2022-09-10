@@ -2,15 +2,15 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
     <metadata>
         <id>Forms9Patch</id>
-        <version>1.8.0.0</version>
+        <version>2.4.9</version>
         <title>Forms9Patch</title>
         <authors>Ben Askren</authors>
         <owners>baskren</owners>
         <requireLicenseAcceptance>true</requireLicenseAcceptance>
-        <licenseUrl>https://opensource.org/licenses/MIT</licenseUrl>
         <license type="file">license\LICENSE</license>
         <projectUrl>https://github.com/baskren/Forms9Patch</projectUrl>
         <iconUrl>http://buildcalc.com/forms9patch/Icons/favicon-128.png</iconUrl>
+        <icon>icon.png</icon>
 	<description>
 Xamarin Forms is great for developing apps on Android, iOS, and Universal Windows Platform (UWP) but it is missing some important features: 
 - Scalable images
@@ -26,6 +26,128 @@ Android developers can use NinePatch bitmaps, the drawable directory naming conv
   </description>
   <summary>Simplify multi-device image, label and font management in your NetStandard, PCL, and Shared Library Xamarin.Forms mobile and UWP apps</summary>
 	<releaseNotes>
+    2.4.9:
+    **Fixed:**
+    - Issue #87: Icons not showing on buttons on Android #87;
+    - Issue #86: Toast error message in productive app when missing picture;
+    - Issue #85: Android crashes when a system font has been added as an asset or resource;
+    - Issue #83: HtmlText Inline style with space char;
+    - Issue #82: LineHeight not working (Android);
+    
+    2.4.8
+    **Fixed:**
+    - Apple: ".SFUI" font family renders using Times New Roman
+
+    2.4.7
+    **Fixed:**
+    - More issues with updates to Android Font Management
+
+    2.4.3
+    **Fixed:**
+    - Unable to LinkAll with iOS and Android;
+    - When HasShadow = true, Button size changes between enabled / disabled state;
+    - Bubble popup not rendering correctly on UWP;
+    - Very intermittent crash on UWP when trying to print (causeed by UWP.WebView Javascript race condition)
+    - Label cannot load fonts from Android/Assets
+
+    **New:**
+    - PageMargin creatable from library client code via factory methods
+
+    **Improved:**
+    - Android performance for Label
+
+
+    2.4.2
+
+    **Fixed:**
+    - ToPdfAsync and ToPngAsync missing the '.' between the filename and the suffix;
+    - SVG TintColor not working (thank you @boris-gutman);
+
+
+    2.4.0.0:
+
+    **New:**
+
+    - Modernized FontExtensions for XF 4.6;
+    - Add ability to find minimum (one-line) size for Button and SegmentedControl;
+    - GetMinSize on Button and SegmentedControl;
+    - Improved Android label rendering;
+    - Migrated Pickers to use Xamarin.Forms.CollectionView (instead of ListView);
+
+    **Fixed:**
+
+    Android:
+    - Updated to Android Q not call APIs obsoleted at Android Q;
+    - Android label sizing issue on 1 line buttons where System font is very large;
+    - Label will crash if FontFamily is unknown;
+    - Exception thrown because Droid.OnTouchListener can construct NativeGestureDetector on non-ui- thread;
+    -
+
+    iOS:
+    - Objective-C exception thrown. Name: NSInvalidArgumentException Reason: -[UIKeyCommand image]: unrecognized selector sent to instance;
+
+    General:
+    - Forms9Patch.ListView and Picker's crash when LINK ALL is selected;
+    - Crash because Listener.Listeners can have null elements;
+
+
+    2.3.0.0:
+
+    **New:**
+
+    - Forms9Patch.ImageSource.FromSvgText(string svgText) allows SVG string to be used as an Source for Forms9Patch.Image;
+    - Added UWP ColorGradientBoxRenderer;
+    - Added Color to ActivityIndicatorPopup constructor;
+    - Added Scale property to Popups;
+    - Alert element (subclass of BubblePopup);
+    - Added IconColor to Button and SegmentedControl;
+    - Fixed missing components of WebView export + print in iOS;
+    - Added optional width (in pixels) argument for ToPngService.ToPngAsync;
+    - Added optional PageSize (in points) and PageMargin (in points) argument to ToPdfService.ToPdfAsync;
+    - Added new PageSize class to specify standard page sizes and switch between landscape and portrait (for PDFs);
+    - Added new PageMargin class to specify margins for PDFs;
+
+    **Fixed:**
+
+    - &lt;a&gt; tag touches not working on Android;
+    - Edge case where Image can cause crash because SKCanvas is accidentally disposed;
+    - SKBitmaps can be release prematurely, causing future Images using the same EmbeddedResource to not render;
+    - Multiple Add/Removes from P42.Utils.ObservableConcurrentCollection are being passed as one item instead of n items;
+    - Crash when clearing iOS gesture recognizers;
+    - Popup crashes when disposed called on background thread;
+    - Prevented BubbleLayout.InvalidateMeasure from being called on background thread;
+    - Removed risk of null exception being thrown when Popup navigation is called;
+    - Crash on iOS when disposing NativeGestureHandler;
+    - AppCenter reported null exception in PopupBase.PopAsync();
+    - SIGABRT: Cannot print WebView in iOS without first calling Forms9Patch.WebViewPrintEffect.AttachTo(webView) BEFORE setting webview.Sourc;
+    - UWP image auto invalidate could occur on background thread;
+    - Permission popup not returning correct PermissionState;
+    - Weird edge case where thread will deadlock when Popup is asked to Pop when it has never been generated;
+    - iOS print html string not working;
+    - Guides not showing additional step required to get Pdf export, Png export, and printing working on iOS;       
+    - Fixed missing components of WebView export + print in iOS;
+            
+
+    2.2.6.0: Fixed: Printing HTML text not working in iOS;  Guides not up to date WRT using WebViewPrintEffect;
+    2.2.5.0: New: Added EntryNoUnderlineEffect (to remove those pesky Android underlines);  Fixed: Multiple memory leaks; Changing Target property of Popup doesn't update target if it is currently visible; Android crash when Pinching or Rotating; SinglePicker can crash when BasePicker.Index has changed to -1; iOS label renderer is elipsizing the last character in very long, multiline, lines=0 strings; Crash when print job fails on UWP; WebView printing, pdf export, and pnd export not working on iOS; Edge case crashes for UWP printing;
+    2.2.4.0: Fixed: Inconsistancies in gesture values, resulting in buttons being triggered when pointer has been moved outside of button's bounds; Swiping ListView cell w/o menu can cause scrolling to be disabled;
+    2.2.3.0: Fixed: Android.FontManagement.get_FontFiles can call disposed Directory object;
+    2.2.2.0: Renamed WebViewExtensions to PrintService;
+    2.2.1.0: New: htmlString.ToPdf() and webView.ToPdf() extension methods for iOS and Android; htmlString.Print() extension method. Fixed: Label.LineHeight not working in UWP; Button is not visually responsive enough;
+    2.2.0.0: Built for use with XF 4.4;  Fixed: ToPng functions not always providing optimal results; Android WebViewPrintService not working; UWP WebViewPrintService not yet implemented;
+    2.1.3.0: Fixed: Button.Command not fired when GroupToggle = None.
+    2.1.2.0: Fixed: Targeted Menu cell size too small (Android); Bold and italics tags not working on iOS Forms9Patch.Label.HtmlText when using default font;  Crash when presenting TargetedMenu without Target on iOS;
+    2.1.1.0: Fixed: Button text is clipped on iOS versions earlier than 11.3;  TargetedMenu in vertical orientation is displayed modally (instead of paginating) if menu is longer than space available; TargetedMenu renders on wrong page and next pagination is broken if last appearance did not end on first page; Back and forward buttons are not aligned and sized correctly when TargetedMenu is in vertical orientation; Button padding is not sufficient; Modal popup doesn't respond dynamically to Padding changes;
+    2.1.0.0: New: EmbeddedHtmlViewSource (for using EmbeddedResource files as a source to a WebView).  Fixed: Layouts not sized to fit content smaller than 40px; Crash if F9P service is called before Xamarin.Forms.Application.Current is set; EmbeddedResource fonts are broken on UWP;  Android TargetedMenu is broken; CornerRadius of FlyoutPopup is not initiated correctly; Extra padding intermittantly appears in layouts;
+    2.0.2.0: Fixed: Android crash when FormsGestures.Listener is disposed; Android Label not rendered in some edge cases;
+    2.0.1.0: New: TargetedMenu.SelectedSegment. Fixed: Quick push+pop of popups can cause crash; Memory leaks in Android; Collision with Rg.Plugins.Popup in iOS apps;
+    2.0.0.0: New: Pattern compliant IDisposible elements; Popups Dispose() will cancel popup; ListView will dispose IDisposable cell contents; Popups will dispose IDisposable contents; Image leaks fixed; Embedded fork of Rg.Plugins.Popups with fixes; Can copy Toast content by long press; DiskSpace helper static class;    Fixed: Right click on cell throws exception in UWP; UWP HtmlToPng causes crash; Button doesn't position icon correctly if label is null; Button layout not correct if TextAlignent=end; ContentView.BackgroundImage not being disposed; Bubble popup doesn't appear if target bounds cannot be found; #29 Frame doesn't appear if it has no content; #30 Doesn't work with XAML previewer; #32 iOS now uses WKWebView instead of UIWebView;
+    1.8.1.0: Build with Xamarin.Forms v4.2; New: Added PermissionPopup.AffirmedAsync() and IPopup.Parameter; Fixed: Binding for Segment.Command doesn't work; Fixed: Label is blank in weird Android ListView edge case; Added optional recursion detection and breadcrumbs; Reduced memory footprint of EmbeddedResourceExtensions;  Potentially Fixed: Issue#20 (not able to replicate issue but removed offending code);  Fixed: Issue#25 (Android crash when Visual stype property is set);
+    1.8.0.5: Fixed: Android version of Label crashes on pre-M versions of Android;
+    1.8.0.4: Android Fixes: Children of Forms9Patch layout elements are assigned Parent property twice; 1.8.0.3 solution to Android cell swipe issue doesn't work on hardware; Forms9Patch.ListView group header labels are not updating with correct text when BindingContext is changed; Inserted cells in Forms9Patch.ListView is not rendering content at first rendering; App crashes when compiled with Link SDK;
+    1.8.0.3: Android Fixes: BubblePopup Content not positioned correctly after screen orientation change; Labels not rendered correctly upon re-rerendering (extreme edge case); ListViewRenderer and ScrollViewRenderer are intercepting FormsGestures touches causing all but tap gesture to fail; BubblePopup not positioned correctly after orientation change.  Change: Button.Lines default changed to 0.
+    1.8.0.2: Fixed: Label causes crash on older versions of iOS when default FontSize is used;
+    1.8.0.1: Added Xamarin.Android.Support.Core.Utils dependency to NuSpec; Added XF4.0 Android dependencies to NuSpec;
     1.8.0.0: New: Built for Xamarin.Forms 4; FlyoutPopup can be cancelled with Swipe gesture; TargetedMenu now supports Vertical Orientation; Buttons, by default, have IsLongPressEnabled=false (for faster response); Added IconFontFamily to TargetedMenu;  Fixed: Intermittant failure to render labels when in ListView; HardwareKeyPage not working in Xamarin.Forms.Shell; Empty Label.Text causes crash; Not all FormsGestures working on all Xamarin.Forms elements; Rendering of ListView becomes slower and slower when cell content is changed; Label is truncated in some edge cases (Android); ModalPopup does not respond to WidthRequest or HeightRequest; ListView crash because Xamarin.Forms.ScrollView is disposed pre-maturely (thanks Xamarin!); SegmentedControl returning IsTruncated when it isn't; First display of picker may have scroll position in wrong place; Crash because LabelRenderer.Control or LabelRenderer.Element is null; Crash when trying to get the location of a view that has not yet been rendered; Crash when FormsGestures is called on a disposed Android view; Crash when trying to use a custom font that doesn't have ".Resources" in its EmbeddedResourceId; BubblePopup appearing as ModalPopup on UWP when window is small or not near top left of screen; UWP back button only clears top most popup; UWP, SegmentedControl has shadow not showing state correctly; TargetedMenu rendering is too slow;
     1.7.0.0: New: FlyoutPopup makes it easy to create flyout views that dock on the left, right, top or bottom sides of the screen.
     1.6.7.3: Fixed: ModalPopup not centered set to LayoutOption.Fill; Updates: replaced iOS deprecated methods layoutManager.LineFragmentRectForGlyphAtIndex and layou;tManager.CharacterIndexForPoint; Xamarin.Android.Arch.Core packages from 1.0.3.1 to 1.1.1.1;
@@ -51,7 +173,7 @@ Android developers can use NinePatch bitmaps, the drawable directory naming conv
     1.4.0: New: Clipboard supports multiple objects of same Mime type, Inter-app Data Sharing; Fixed: HardwareKeyboardListener crashes in some UWP implementations, Popups crashes in Android implementations when instantiated before Forms9Patch.RootPage is instantiated;  Eliminated need for Android "forms9patch_copy_paste_authority" string.
     1.3.3: Fixed: targeted popups (Bubble, TargetedToast, TargetedMenu) will, after the device orientation has changed, render in wrong location when pointing at an element inside of a ScrollView.
     1.3.2: New: KeyboardService.Height and KeyboardService.HeightChanged allow you to resize your layout views in response to changes in the software keyboard.
-    1.3.1: Fixed: Xamarin.Forms 3.0 UWP: Popups, Buttons, and Layouts are rendering blank.
+    1.6.0: Fixed: Xamarin.Forms 3.0 UWP: Popups, Buttons, and Layouts are rendering blank.
     1.3.0.0: New: Forms9Patch is open source!  Get it at https://1drv.ms/u/s!AkPAsLOJX3DChFJLwyOMwJgpVXfQ  Fixed: failure to build because of orphaned references to SkiaSharp.Extended.Svg;
     1.2.1.0: Fixed: Clipboard entry reading fails on iOS; Work around for SkiaSharp 1.60 Lattice bug;
     1.2.0.0: Fixed: Android crash if using custom font and app cache is cleared.  New: Clipboard and HardwareKey classes (documentation is coming!).  NOTE: You must add `&lt;string name="forms9patch_copy_paste_authority"&gt;*your_Android_app_package_name_here*.f9pcopypaste&lt;/string&gt;` to your Android project's `Resources/values/strings.xml` file.  See the GitHub Forms9PatchDemo app for an example.
@@ -139,21 +261,55 @@ Fixed: iOS HtmlMarkup underlines don't match font color, Default Android image b
         <language>en-US</language>
         <tags>NinePatch Xamarin Forms SVG Image Segmented button Tooltip Popup Bubble Pointer ImageButton longpress HTML text markup Label autofit autosize autoscale Data Sharing Multi-item clipboard</tags>
         <dependencies>
-            <group>
-                <dependency id="Xamarin.Forms" version="4.0.0.497661" />
-                <dependency id="Newtonsoft.Json" version="12.0.2" />
-                <dependency id="Rg.Plugins.Popup" version="1.1.5.188" />
-                <dependency id="SkiaSharp.Views.Forms" version="1.68.0" />
+            <group targetFramework="NetStandard2.0">
+                <dependency id="Xamarin.Forms" version="4.8.0.1687" />
+                <dependency id="Xamarin.Essentials" version="1.6.0" />
+                <dependency id="Newtonsoft.Json" version="12.0.3" />
+                <dependency id="SkiaSharp.Views.Forms" version="2.80.3" />
+                <dependency id="SkiaSharp.Svg" version="1.60" />
+            </group>
+            <group targetFramework="Xamarin.iOS10">
+                <dependency id="Xamarin.Forms" version="4.8.0.1687" />
+                <dependency id="Xamarin.Essentials" version="1.6.0" />
+                <dependency id="Newtonsoft.Json" version="12.0.3" />
+                <dependency id="SkiaSharp.Views.Forms" version="2.80.3" />
                 <dependency id="SkiaSharp.Svg" version="1.60" />
             </group>
             <group targetFramework="UAP10.0">
-                <dependency id="Xamarin.Forms" version="4.0.0.497661" />
-                <dependency id="Newtonsoft.Json" version="12.0.2" />
-                <dependency id="Rg.Plugins.Popup" version="1.1.5.188" />
-                <dependency id="SkiaSharp.Views.Forms" version="1.68" />
-                <dependency id="SkiaSharp.Svg" version="1.60" />
+                <dependency id="Xamarin.Forms" version="4.8.0.1687" />
+                <dependency id="Xamarin.Essentials" version="1.6.0" />
+                <dependency id="Newtonsoft.Json" version="12.0.3" />
+                <dependency id="SkiaSharp.Views.Forms" version="2.80.3" />
+                <dependency id="SkiaSharp.Svg" version="1.60.0" />
                 <dependency id="SharpDX.Direct2D1" version="4.2.0" />
-                <dependency id="Microsoft.NETCore.UniversalWindowsPlatform" version="6.2.8" />
+                <dependency id="Microsoft.NETCore.UniversalWindowsPlatform" version="6.2.13" />
+                <dependency id="NETStandard.Library" version="2.0.3" />
+            </group>
+            <group targetFramework="UAP1.0">
+                <dependency id="Xamarin.Forms" version="4.8.0.1687" />
+                <dependency id="Xamarin.Essentials" version="1.6.0" />
+                <dependency id="Newtonsoft.Json" version="12.0.3" />
+                <dependency id="SkiaSharp.Views.Forms" version="2.80.3" />
+                <dependency id="SkiaSharp.Svg" version="1.60.0" />
+                <dependency id="SharpDX.Direct2D1" version="4.2.0" />
+                <dependency id="Microsoft.NETCore.UniversalWindowsPlatform" version="6.2.13" />
+                <dependency id="NETStandard.Library" version="2.0.3" />
+            </group>
+            <group targetFramework="MonoAndroid10">
+                <dependency id="Xamarin.Forms" version="4.8.0.1687" />
+                <dependency id="Xamarin.Essentials" version="1.6.0" />
+                <dependency id="Newtonsoft.Json" version="12.0.3" />
+                <dependency id="SkiaSharp.Views.Forms" version="2.80.3" />
+                <dependency id="SkiaSharp.Svg" version="1.60" />
+                <!---
+                <dependency id="Xamarin.Android.Support.v4" version="28.0.0.3" />
+                <dependency id="Xamarin.Android.Support.Design" version="28.0.0.3" />
+                <dependency id="Xamarin.Android.Support.v7.AppCompat" version="28.0.0.3" />
+                <dependency id="Xamarin.Android.Support.v7.CardView" version="28.0.0.3" />
+                <dependency id="Xamarin.Android.Support.v7.MediaRouter" version="28.0.0.3" />
+                <dependency id="Xamarin.Android.Support.CustomTabs" version="28.0.0.3" />
+                <dependency id="Xamarin.Android.Support.Core.Utils" version="28.0.0.3" />
+                -->
             </group>
         </dependencies>
     </metadata>

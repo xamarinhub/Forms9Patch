@@ -10,18 +10,26 @@ using Android.Content.PM;
 using Java.Security.Cert;
 using System.IO;
 using Java.Lang;
+using System.Collections.Generic;
+using System.Linq;
 //using Android.Net;
 
 [assembly: Dependency(typeof(Forms9Patch.Droid.ApplicationInfoService))]
 namespace Forms9Patch.Droid
 {
+    [Xamarin.Forms.Internals.Preserve(AllMembers = true)]
     public class ApplicationInfoService : IApplicationInfoService
     {
         public int Build
         {
             get
             {
-                return Settings.Context.PackageManager.GetPackageInfo(Identifier, 0).VersionCode;
+                if (Android.OS.Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.P)
+                    return (int)Settings.Context.PackageManager.GetPackageInfo(Identifier, 0).LongVersionCode;
+                else
+#pragma warning disable CS0618 // Type or member is obsolete
+                    return Settings.Context.PackageManager.GetPackageInfo(Identifier, 0).VersionCode;
+#pragma warning restore CS0618 // Type or member is obsolete
             }
         }
 
@@ -65,9 +73,35 @@ namespace Forms9Patch.Droid
                 {
                     e.PrintStackTrace();
                 }
-                var signatures = packageInfo.Signatures;
-                byte[] cert = signatures[0].ToByteArray();
-                var input = new MemoryStream(cert);
+
+                IList<string> signatures = null;
+                if (Android.OS.Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.P)
+                {
+                    if (packageInfo?.SigningInfo is SigningInfo signingInfo)
+                    {
+                        if (signingInfo.HasMultipleSigners && signingInfo.GetApkContentsSigners() is Signature[] apkSignatures)
+                            signatures = SignatureDigest(apkSignatures);
+                        if ((signatures is null || signatures.Count < 1) && signingInfo.GetSigningCertificateHistory() is Signature[] historySignatures)
+                            signatures = SignatureDigest(historySignatures);
+                    }
+                }
+#pragma warning disable CS0618 // Type or member is obsolete
+                else if ((signatures is null || signatures.Count < 1) && packageInfo?.Signatures is IList<Signature> prePiSignatures)
+#pragma warning restore CS0618 // Type or member is obsolete
+                    signatures = SignatureDigest(prePiSignatures.ToArray());
+
+                if (signatures != null && signatures?.Count < 1)
+                    return signatures[0];
+
+                return null;
+            }
+        }
+
+        private static string SignatureDigest(Signature sig)
+        {
+            byte[] cert = sig.ToByteArray();
+            using (var input = new MemoryStream(cert))
+            {
                 CertificateFactory cf = null;
                 try
                 {
@@ -91,7 +125,7 @@ namespace Forms9Patch.Droid
                 {
                     var md = Java.Security.MessageDigest.GetInstance("SHA1");
                     byte[] publicKey = md.Digest(c.GetEncoded());
-                    hexString = byte2HexFormatted(publicKey);
+                    hexString = Byte2HexFormatted(publicKey);
                 }
                 catch (Java.Security.NoSuchAlgorithmException e1)
                 {
@@ -103,6 +137,18 @@ namespace Forms9Patch.Droid
                 }
                 return hexString;
             }
+        }
+        private static List<string> SignatureDigest(Signature[] sigList)
+        {
+            var signaturesList = new List<string>();
+            foreach (var signature in sigList)
+            {
+                if (signature != null)
+                {
+                    signaturesList.Add(SignatureDigest(signature));
+                }
+            }
+            return signaturesList;
         }
 
         /*
@@ -120,19 +166,21 @@ namespace Forms9Patch.Droid
         }
         */
 
-        public static string byte2HexFormatted(byte[] arr)
+        public static string Byte2HexFormatted(byte[] arr)
         {
-            var str = new StringBuilder(arr.Length * 2);
-            for (int i = 0; i < arr.Length; i++)
+            using (var str = new StringBuilder(arr.Length * 2))
             {
-                var h = Integer.ToHexString(arr[i]);
-                int l = h.Length;
-                if (l == 1) h = "0" + h;
-                if (l > 2) h = h.Substring(l - 2, l);
-                str.Append(h.ToUpper());
-                if (i < (arr.Length - 1)) str.Append(':');
+                for (int i = 0; i < arr.Length; i++)
+                {
+                    var h = Integer.ToHexString(arr[i]);
+                    int l = h.Length;
+                    if (l == 1) h = "0" + h;
+                    if (l > 2) h = h.Substring(l - 2, l);
+                    str.Append(h.ToUpper());
+                    if (i < (arr.Length - 1)) str.Append(':');
+                }
+                return str.ToString();
             }
-            return str.ToString();
         }
     }
 }

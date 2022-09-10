@@ -1,4 +1,4 @@
-using Android.Views;
+﻿using Android.Views;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,81 +22,52 @@ namespace FormsGestures.Droid
         bool _pinching;
         bool _rotating;
 
-        //static bool _cancelled;
+        int _numberOfTaps;
+
+        System.Timers.Timer TappedTimer;
+        int _tappedTimerNumberOfTaps;
+
+        System.Timers.Timer LongPressTimer;
 
         PanEventArgs _lastPanArgs;
-        PanEventArgs _secondToLastPanArgs;
 
-        int[] _viewLocationAtOnDown = { 0, 0 };
+        DownUpEventArgs _downUpEventArgs;
         #endregion
 
 
         #region Properties
-        bool HandlesTapped
+        bool HandlesTest(Func<Listener, bool> test)
         {
-            get
-            {
                 var handler = NativeGestureHandler.InstanceForElement(Element);
                 while (handler != null)
                 {
-                    var listener = handler.Listener;
-                    if (listener != null && listener.HandlesTapped)
+                    if (handler.Listener != null && test(handler.Listener))
                         return true;
                     handler = NativeGestureHandler.InstanceForElement(handler.Element?.Parent);
                 }
                 return false;
-            }
         }
+        public bool HandlesPressTapEvents => HandlesTapped || HandlesDoubleTapped || HandlesLongPresses;
 
-        bool HandlesDoubleTapped
-        {
-            get
-            {
-                var handler = NativeGestureHandler.InstanceForElement(Element);
-                while (handler != null)
-                {
-                    var listener = handler.Listener;
-                    if (listener != null && listener.HandlesDoubleTapped)
-                        return true;
-                    handler = NativeGestureHandler.InstanceForElement(handler.Element?.Parent);
-                }
-                return false;
-            }
-        }
+        public bool HandlesTapped 
+            => HandlesTest(listener => listener.HandlesTapped);
 
-        bool HandlesSwiped
-        {
-            get
-            {
-                var handler = NativeGestureHandler.InstanceForElement(Element);
-                while (handler != null)
-                {
-                    var listener = handler.Listener;
-                    if (listener != null && listener.HandlesSwiped)
-                        return true;
-                    handler = NativeGestureHandler.InstanceForElement(handler.Element?.Parent);
-                }
-                return false;
-            }
-        }
+        public bool HandlesDoubleTapped 
+            => HandlesTest(listener => listener.HandlesDoubleTapped);
 
-        bool HandlesLongPresses
-        {
-            get
-            {
-                var handler = NativeGestureHandler.InstanceForElement(Element);
-                while (handler != null)
-                {
-                    var listener = handler.Listener;
-                    if (listener != null && (listener.HandlesLongPressed || listener.HandlesLongPressing))
-                        return true;
-                    handler = NativeGestureHandler.InstanceForElement(handler.Element?.Parent);
-                }
-                return false;
-            }
-        }
+        public bool HandlesPan 
+            => HandlesTest(listener => listener.HandlesPanned || listener.HandlesPanning);
 
-        bool RendererDisposed => Xamarin.Forms.Platform.Android.Platform.GetRenderer(Element as VisualElement) == null;
+        public bool HandlesMove 
+            => HandlesTest(listener => listener.HandlesPanned || listener.HandlesPanning || listener.HandlesPinched || listener.HandlesPinching || listener.HandlesSwiped || listener.HandlesRotated || listener.HandlesRotating);
+
+        public bool HandlesSwiped
+             => HandlesTest(listener => listener.HandlesSwiped);
+
+        public bool HandlesLongPresses
+             => HandlesTest(listener => listener.HandlesLongPressed || listener.HandlesLongPressing);
+
+        bool RendererDisposed => Element==null || Xamarin.Forms.Platform.Android.Platform.GetRenderer(Element as VisualElement) == null;
 
         MotionEvent _start;
         MotionEvent Start
@@ -108,12 +79,10 @@ namespace FormsGestures.Droid
                 if (value != null)
                 {
                     _start = MotionEvent.Obtain(value);
-                    _view?.GetLocationInWindow(_viewLocationAtOnDown);
                 }
                 else
                 {
                     _start = null;
-                    _viewLocationAtOnDown = new[] { 0, 0 };
                 }
             }
         }
@@ -133,19 +102,10 @@ namespace FormsGestures.Droid
         }
 
         MotionEvent _secondToLastPan;
-        MotionEvent SecondToLastPan => _secondToLastPan;
+        //MotionEvent SecondToLastPan => _secondToLastPan;
 
 
-        PanEventArgs LastPanArgs
-        {
-            get => _lastPanArgs;
-            set
-            {
-                _secondToLastPanArgs = ((value != null) ? _lastPanArgs : null);
-                _lastPanArgs = value;
-            }
-        }
-
+       
         MotionEvent _tappedTimerUpMotionEvent;
         MotionEvent TappedTimerUpMotionEvent
         {
@@ -157,7 +117,7 @@ namespace FormsGestures.Droid
             }
         }
 
-        PanEventArgs SecondToLastPanArgs => _secondToLastPanArgs;
+        //PanEventArgs SecondToLastPanArgs => _secondToLastPanArgs;
 
         #endregion
 
@@ -167,6 +127,8 @@ namespace FormsGestures.Droid
         readonly int _id;
         internal NativeGestureListener(Android.Views.View view, Xamarin.Forms.Element element)
         {
+            P42.Utils.DebugExtensions.AddToCensus(this);
+
             _id = _instances++;
             _view = view;
             Element = element;
@@ -181,6 +143,13 @@ namespace FormsGestures.Droid
                 _disposed = true;
                 StopTapLongPress();
                 _view = null;
+                _start?.Dispose();
+                _lastPan?.Dispose();
+                _secondToLastPan?.Dispose();
+                _tappedTimerUpMotionEvent?.Dispose();
+                LongPressTimer?.Dispose();
+                TappedTimer?.Dispose();
+                P42.Utils.DebugExtensions.RemoveFromCensus(this);
             }
             base.Dispose(disposing);
         }
@@ -188,16 +157,13 @@ namespace FormsGestures.Droid
 
 
         #region LongPress Timer
-        System.Timers.Timer LongPressTimer;
-
         void LongPressingTimerStop()
         {
+            LongPressTimer?.Stop();
             if (LongPressTimer != null)
-            {
-                LongPressTimer.Stop();
                 LongPressTimer.Elapsed -= OnLongPressTimerElapsed;
-                LongPressTimer = null;
-            }
+            LongPressTimer?.Dispose();
+            LongPressTimer = null;
         }
 
         void LongPressTimerStart()
@@ -227,14 +193,13 @@ namespace FormsGestures.Droid
                 {
                     if (!RendererDisposed)
                     {
-                        var args = new AndroidLongPressEventArgs(Start, null, _view, _viewLocationAtOnDown);
                         var handler = NativeGestureHandler.InstanceForElement(Element);
                         while (handler != null)
                         {
                             var listener = handler.Listener;
                             if (listener != null && listener.HandlesLongPressing)
                             {
-                                args.Listener = listener;
+                                var args = new AndroidLongPressEventArgs(Start, null, _view, listener);
                                 //System.Diagnostics.Debug.WriteLine("NativeGestureListener.LongPressTimerElapsed LongPressing");
                                 listener.OnLongPressing(args);
                                 if (args.Handled)
@@ -250,17 +215,14 @@ namespace FormsGestures.Droid
 
 
         #region Tapped Timer
-        System.Timers.Timer TappedTimer;
-        int _tappedTimerNumberOfTaps;
-
         void TappedTimerStop()
         {
             if (TappedTimer != null)
             {
                 TappedTimer.Stop();
                 TappedTimer.Elapsed -= OnTappedTimerElapsed;
+                TappedTimer.Dispose();
                 TappedTimer = null;
-                //_tappedTimerUpMotionEvent = null;
             }
         }
 
@@ -289,20 +251,19 @@ namespace FormsGestures.Droid
 
         void OnTappedTimerElapsedInner()
         {
-            if (P42.Utils.Environment.IsOnMainThread)
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
             {
                 try
                 {
                     if (!RendererDisposed)
                     {
-                        var args = new AndroidTapEventArgs(_tappedTimerUpMotionEvent, _view, _tappedTimerNumberOfTaps, _viewLocationAtOnDown);
                         var handler = NativeGestureHandler.InstanceForElement(Element);
                         while (handler != null)
                         {
                             var listener = handler.Listener;
                             if (listener != null && listener.HandlesTapped)
                             {
-                                args.Listener = listener;
+                                var args = new AndroidTapEventArgs(_tappedTimerUpMotionEvent, _view, _tappedTimerNumberOfTaps, listener);
                                 //System.Diagnostics.Debug.WriteLine(GetType() + "." + P42.Utils.ReflectionExtensions.CallerMemberName() + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture));
                                 listener.OnTapped(args);
                                 if (args.Handled)
@@ -313,9 +274,7 @@ namespace FormsGestures.Droid
                     }
                 }
                 catch (Exception) { }
-            }
-            else
-                Xamarin.Forms.Device.BeginInvokeOnMainThread(() => OnTappedTimerElapsedInner());
+            });
         }
         #endregion
 
@@ -333,7 +292,7 @@ namespace FormsGestures.Droid
             _pinching = false;
             _rotating = false;
             _multiMoving = false;
-
+            _downUpEventArgs = null;
         }
 
         void StopTapLongPress()
@@ -346,24 +305,11 @@ namespace FormsGestures.Droid
 
 
         #region Down / Up / 'ed events
-        int _downFires;
-        DateTime _onDownDateTime = DateTime.MinValue;
         public override bool OnDown(MotionEvent e)
         {
-            //if (_debugEvents) System.Diagnostics.Debug.WriteLine ("OnDown [{0}]",_id);
-            //System.Diagnostics.Debug.WriteLine("NativeGestureListener." + P42.Utils.ReflectionExtensions.CallerMemberName() + " Index:" + e);
-            //System.Diagnostics.Debug.WriteLine("NativeGestureListener.OnDown ENTER  Element[" + Element + "]");
-
             if (e.Action != MotionEventActions.Down)
-            {
-                //System.Diagnostics.Debug.WriteLine("NativeGestureListener.OnDown invalid e.Action [" + e.Action + "]");
                 return false;
-            }
 
-            //System.Diagnostics.Debug.WriteLine(GetType() + ".OnDown fires=" + _downFires);
-            _downFires++;
-
-            _onDownDateTime = DateTime.Now;
             Start = e;
             _panning = false;
             _pinching = false;
@@ -371,16 +317,15 @@ namespace FormsGestures.Droid
             _multiMoving = false;
             TappedTimerStop();
             LongPressTimerStart();
-            // TODO: Make sure _vliewLocaionAtDown is property translated into Listener.Element coordinates
-            _view?.GetLocationInWindow(_viewLocationAtOnDown);
-            var args = new AndroidDownUpEventArgs(e, _view, _viewLocationAtOnDown);
+
             var handler = NativeGestureHandler.InstanceForElement(Element);
             while (handler != null)
             {
                 var listener = handler.Listener;
                 if (listener != null && listener.HandlesDown)
                 {
-                    args.Listener = listener;
+                    var args = new AndroidDownUpEventArgs(e, _view, listener);
+                    _downUpEventArgs = args;
                     args.Handled = true;
                     listener.OnDown(args);
                     //if (!args.Handled)
@@ -394,48 +339,50 @@ namespace FormsGestures.Droid
             return true;
         }
 
-        int _upFires;
-        int _numberOfTaps;
         public bool OnUp(MotionEvent ev)
         {
-            //System.Diagnostics.Debug.WriteLine(GetType() + "." + P42.Utils.ReflectionExtensions.CallerMemberName() + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture) );
-            //System.Diagnostics.Debug.WriteLine("NativeGestureListener." + P42.Utils.ReflectionExtensions.CallerMemberName() + " action:" + ev.Action + " index" + ev.ActionIndex + " e:" + ev);
-            //System.Diagnostics.Debug.WriteLine("NativeGestureListener.OnUp ENTER Element[" + Element + "]");
-            //if (ev.Action == MotionEventActions.Down)
-            //    System.Diagnostics.Debug.WriteLine("");
             if (ev.Action != MotionEventActions.Up)
-            {
-                //System.Diagnostics.Debug.WriteLine("NativeGestureListener.OnUp invalid e.Action [" + ev.Action + "]");
                 return false;
-            }
-
-            //var touchDuration = DateTime.Now - _onDownDateTime;
 
             _numberOfTaps++;
             LongPressingTimerStop();
             TappedTimerStart(ev, _numberOfTaps);
 
-            //System.Diagnostics.Debug.WriteLine("NativeGestureListener.OnUp e.Action [" + ev.Action + "]");
-            //System.Diagnostics.Debug.WriteLine(GetType() + ".OnUp fires=" + _upFires);
-            _upFires++;
+            var handled = CallOnUp(ev);
 
-            bool handled = false;
+            if (_panning)
             {
-                handled = CallOnUp(ev);
-
-                if (_panning)
-                    handled = CallOnPanned(ev);
-                else if (_longPressed)
+                handled |= CallOnPanned(ev);
+            }
+            else if (_longPressed)
+            {
+                var handler = NativeGestureHandler.InstanceForElement(Element);
+                while (handler != null)
                 {
-                    LongPressEventArgs args = new AndroidLongPressEventArgs(Start, ev, _view, _viewLocationAtOnDown);
+                    var listener = handler.Listener;
+                    if (listener != null && listener.HandlesLongPressed)
+                    {
+                        LongPressEventArgs args = new AndroidLongPressEventArgs(Start, ev, _view, listener);
+                        listener.OnLongPressed(args);
+                        handled |= args.Handled;
+                        if (args.Handled)
+                            break;
+                    }
+                    handler = NativeGestureHandler.InstanceForElement(handler.Element?.Parent);
+                }
+            }
+            else if (!_pinching && !_rotating)
+            {
+                // Tapping
+                {
                     var handler = NativeGestureHandler.InstanceForElement(Element);
                     while (handler != null)
                     {
                         var listener = handler.Listener;
-                        if (listener != null && listener.HandlesLongPressed)
+                        if (listener != null && listener.HandlesTapping)
                         {
-                            args.Listener = listener;
-                            listener.OnLongPressed(args);
+                            TapEventArgs args = new AndroidTapEventArgs(ev, _view, _numberOfTaps, listener);
+                            listener.OnTapping(args);
                             handled = handled || args.Handled;
                             if (args.Handled)
                                 break;
@@ -443,65 +390,42 @@ namespace FormsGestures.Droid
                         handler = NativeGestureHandler.InstanceForElement(handler.Element?.Parent);
                     }
                 }
-                else if (!_pinching && !_rotating)
+                // Double Tapped
+                if (_numberOfTaps % 2 == 0)
                 {
+                    var handler = NativeGestureHandler.InstanceForElement(Element);
+                    while (handler != null)
                     {
-                        TapEventArgs args = new AndroidTapEventArgs(ev, _view, _numberOfTaps, _viewLocationAtOnDown);
-                        var handler = NativeGestureHandler.InstanceForElement(Element);
-                        while (handler != null)
+                        var listener = handler.Listener;
+                        if (listener != null && listener.HandlesDoubleTapped)
                         {
-                            var listener = handler.Listener;
-                            if (listener != null && listener.HandlesTapping)
-                            {
-                                args.Listener = listener;
-                                listener.OnTapping(args);
-                                handled = handled || args.Handled;
-                                if (args.Handled)
-                                    break;
-                            }
-                            handler = NativeGestureHandler.InstanceForElement(handler.Element?.Parent);
+                            TapEventArgs args = new AndroidTapEventArgs(ev, _view, _numberOfTaps, listener);
+                            listener.OnDoubleTapped(args);
+                            handled = handled || args.Handled;
+                            if (args.Handled)
+                                break;
                         }
-                    }
-                    if (_numberOfTaps % 2 == 0)
-                    {
-                        TapEventArgs args = new AndroidTapEventArgs(ev, _view, _numberOfTaps, _viewLocationAtOnDown);
-                        var handler = NativeGestureHandler.InstanceForElement(Element);
-                        while (handler != null)
-                        {
-                            var listener = handler.Listener;
-                            if (listener != null && listener.HandlesDoubleTapped)
-                            {
-                                args.Listener = listener;
-                                listener.OnDoubleTapped(args);
-                                handled = handled || args.Handled;
-                                if (args.Handled)
-                                    break;
-                            }
-                            handler = NativeGestureHandler.InstanceForElement(handler.Element?.Parent);
-                        }
+                        handler = NativeGestureHandler.InstanceForElement(handler.Element?.Parent);
                     }
                 }
             }
 
-            LastPanArgs = null;
+            _lastPanArgs = null;
             LastPan = null;
-
+            _downUpEventArgs = null;
             return handled;
         }
 
         bool CallOnUp(MotionEvent ev)
         {
-            //System.Diagnostics.Debug.WriteLine(GetType() + "." + P42.Utils.ReflectionExtensions.CallerMemberName() + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture));
-            //System.Diagnostics.Debug.WriteLine(GetType() + ".CallOnUp");
             var handled = false;
-            DownUpEventArgs args = new AndroidDownUpEventArgs(ev, _view, _viewLocationAtOnDown);
             var handler = NativeGestureHandler.InstanceForElement(Element);
             while (handler != null)
             {
                 var listener = handler.Listener;
                 if (listener != null && listener.HandlesUp)
                 {
-                    args.Listener = listener;
+                    DownUpEventArgs args = new AndroidDownUpEventArgs(ev, _view, listener);
                     listener.OnUp(args);
                     handled = handled || args.Handled;
                     if (args.Handled)
@@ -517,14 +441,13 @@ namespace FormsGestures.Droid
             //System.Diagnostics.Debug.WriteLine(GetType() + ".CallOnPanned");
             var handled = false;
             _numberOfTaps = 0;
-            PanEventArgs args = new AndroidPanEventArgs(LastPan ?? Start, ev, LastPanArgs, _view, _viewLocationAtOnDown);
             var handler = NativeGestureHandler.InstanceForElement(Element);
             while (handler != null)
             {
                 var listener = handler.Listener;
                 if (listener != null && listener.HandlesPanned)
                 {
-                    args.Listener = listener;
+                    PanEventArgs args = new AndroidPanEventArgs(LastPan ?? Start, ev, (BaseGestureEventArgs)_lastPanArgs ?? _downUpEventArgs, _view, listener);
                     listener.OnPanned(args);
                     handled = handled || args.Handled;
                     if (args.Handled)
@@ -540,42 +463,33 @@ namespace FormsGestures.Droid
         #region Pan / Fling
         public override bool OnScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY)
         {
-            //if (_debugEvents) System.Diagnostics.Debug.WriteLine ("OnScroll ["+eN.Action+"]["+_id+"] e1=["+e0+"] e2=["+eN+"]");
-            //System.Diagnostics.Debug.WriteLine("NativeGestureListener.OnScroll ENTER  Element[" + Element + "]");
-            bool handled = false;
             StopTapLongPress();
             if (!_multiMoving)
             {
                 _panning = true;
-                PanEventArgs args = new AndroidPanEventArgs(LastPan ?? Start, e2, LastPanArgs, _view, _viewLocationAtOnDown);
                 var handler = NativeGestureHandler.InstanceForElement(Element);
                 while (handler != null)
                 {
                     var listener = handler.Listener;
                     if (listener != null && (listener.HandlesPanning || listener.HandlesPanned))
                     {
-                        args.Listener = listener;
-                        //System.Diagnostics.Debug.WriteLine("~~~ listener.Element=[" + listener.Element + "]");
+                        PanEventArgs args = new AndroidPanEventArgs(LastPan ?? Start, e2, (BaseGestureEventArgs) _lastPanArgs ?? _downUpEventArgs, _view, listener);
                         listener.OnPanning(args);
-                        LastPanArgs = args;
+                        _lastPanArgs = args;
                         LastPan = e2;
-                        handled = handled || args.Handled;
                         if (args.Handled)
                             return true;
                     }
                     handler = NativeGestureHandler.InstanceForElement(handler.Element?.Parent);
                 }
             }
-            return handled;
+            return false;
         }
 
         public override bool OnFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY)
         {
-            //System.Diagnostics.Debug.WriteLine("NativeGestureListener.OnFling ENTER Element[" + Element + "]");
-            //if (_debugEvents) System.Diagnostics.Debug.WriteLine ("OnFling [{0}]",_id);
             StopTapLongPress();
 
-            bool handled = false;
             double hzVel = Math.Abs(velocityX);
             double vtVel = Math.Abs(velocityY);
             Direction direction = Direction.NotClear;
@@ -583,68 +497,48 @@ namespace FormsGestures.Droid
                 direction = ((velocityX > 0f) ? Direction.Right : Direction.Left);
             else if (vtVel > 2 * hzVel)
                 direction = ((velocityY > 0f) ? Direction.Down : Direction.Up);
-            SwipeEventArgs args = new AndroidSwipeEventArgs(e2, _view, direction, _viewLocationAtOnDown);
             var handler = NativeGestureHandler.InstanceForElement(Element);
             while (handler != null)
             {
                 var listener = handler.Listener;
                 if (listener != null && listener.HandlesSwiped)
                 {
-                    args.Listener = listener;
+                    SwipeEventArgs args = new AndroidSwipeEventArgs(e2, _view, direction, listener);
                     listener.OnSwiped(args);
-                    handled = handled || args.Handled;
                     if (args.Handled)
                         return true;
                 }
                 handler = NativeGestureHandler.InstanceForElement(handler.Element?.Parent);
             }
-            // OnFling overrides OnUp??
-            //System.Diagnostics.Debug.WriteLine(GetType() + ".OnFling calling OnUp");
-            //OnUp(e2);
             if (_panning)
                 CallOnPanned(e2);
-            return handled;
+            return false;
         }
         #endregion
 
 
         #region Multi-point gestures
-        PinchEventArgs _previousPinchArgs;
-        RotateEventArgs _previousRotateArgs;
+        Dictionary<Listener, PinchEventArgs> _previousPinchArgs = new Dictionary<Listener, PinchEventArgs>();
+        Dictionary<Listener, RotateEventArgs> _previousRotateArgs = new Dictionary<Listener, RotateEventArgs>();
 
         bool _multiMoving;
         bool _multiInBounds;
 
         protected readonly int _touchSlop;
 
-        MotionEvent _multiStart;
-        MotionEvent MultiStart
-        {
-            get => _multiStart;
-            set
-            {
-                _multiStart?.Recycle();
-                _multiStart = (value != null) ? MotionEvent.Obtain(value) : null;
-            }
-        }
-
         MotionEvent.PointerCoords[] _startCoords;
         public bool OnMultiDown(MotionEvent ev, MotionEvent.PointerCoords[] coords)
         {
-            //System.Diagnostics.Debug.WriteLine("NativeGestureListeners.OnMultiDown ENTER");
             StopTapLongPress();
-            MultiStart = ev;
             _multiMoving = false;
-            //_lastCoords = coords;
             _startCoords = coords;
             return false;
         }
 
         public bool OnMultiMove(MotionEvent ev, MotionEvent.PointerCoords[] coords)
         {
-            //System.Diagnostics.Debug.WriteLine("NativeGestureListeners.OnMultiMove ENTER");
             StopTapLongPress();
-            if (_view != null && !_multiMoving)
+            if (_view != null && !_multiMoving && (coords?.Length > 1 || false) && (_startCoords?.Length > 1 || false) )
             {
                 _multiInBounds = true;
                 for (int i = 0; i < 2; i++)
@@ -672,148 +566,142 @@ namespace FormsGestures.Droid
 
         public bool OnMultiUp(MotionEvent ev, MotionEvent.PointerCoords[] coords)
         {
-            //System.Diagnostics.Debug.WriteLine("NativeGestureListeners.OnMultiUp ENTER");
             bool handled = false;
             if (_multiMoving)
             {
                 StopTapLongPress();
                 handled = handled || OnPinched(ev, coords);
                 handled = handled || OnRotated(ev, coords);
-                MultiStart = null;
                 _multiMoving = false;
             }
             return handled;
         }
 
-
-        /*
-		public bool onMoving(MotionEvent current)
-		{
-			if (_debugEvents) System.Diagnostics.Debug.WriteLine ("onMoving [{0}]",_id);
-
-			timerStop ();
-			bool result = OnScroll(Start, current, 0f, 0f);
-			onPinching(current);
-			onRotating(current);
-			return result;
-		}
-		*/
-
-
         bool OnPinching(MotionEvent ev, MotionEvent.PointerCoords[] coords)
         {
-            //if (_debugEvents) System.Diagnostics.Debug.WriteLine("onPinching [{0}]", _id);
             StopTapLongPress();
             _pinching = true;
             bool handled = false;
+            
+            var handler = NativeGestureHandler.InstanceForElement(Element);
+            while (handler != null)
             {
-                PinchEventArgs pinchArgs = new AndroidPinchEventArgs(ev, coords, _previousPinchArgs, _view, _viewLocationAtOnDown);
-                var args = new PinchEventArgs(pinchArgs);
-                var handler = NativeGestureHandler.InstanceForElement(Element);
-                while (handler != null)
+                if (handler.Listener is Listener listener)
                 {
-                    var listener = handler.Listener;
+                    var previousArgs = _previousPinchArgs.ContainsKey(listener)
+                        ? _previousPinchArgs[listener]
+                        : null;
+                    PinchEventArgs args = new AndroidPinchEventArgs(ev, coords, previousArgs, _view, listener);
                     if (listener != null && listener.HandlesPinching)
                     {
-                        args.Listener = listener;
                         listener.OnPinching(args);
                         handled = handled || args.Handled;
                         //if (args.Handled)
                         //	break;
+                        _previousPinchArgs[listener] = new PinchEventArgs(args, listener);
                     }
-                    handler = NativeGestureHandler.InstanceForElement(handler.Element?.Parent);
                 }
-                _previousPinchArgs = pinchArgs;
+                handler = NativeGestureHandler.InstanceForElement(handler.Element?.Parent);
             }
+            
             return handled;
         }
 
         bool OnRotating(MotionEvent ev, MotionEvent.PointerCoords[] coords)
         {
-            //if (_debugEvents) System.Diagnostics.Debug.WriteLine("onRotating [{0}]", _id);
             StopTapLongPress();
             _rotating = true;
             bool handled = false;
+            
+            var handler = NativeGestureHandler.InstanceForElement(Element);
+            while (handler != null)
             {
-                RotateEventArgs rotateArgs = new AndroidRotateEventArgs(ev, coords, _previousRotateArgs, _view, _viewLocationAtOnDown);
-                var args = new RotateEventArgs(rotateArgs);
-                var handler = NativeGestureHandler.InstanceForElement(Element);
-                while (handler != null)
+                if (handler.Listener is Listener listener)
                 {
-                    var listener = handler.Listener;
+                    var previousArgs = _previousRotateArgs.ContainsKey(listener)
+                    ? _previousRotateArgs[listener]
+                    : null;
+                    RotateEventArgs args = new AndroidRotateEventArgs(ev, coords, previousArgs, _view, listener);
                     if (listener != null && listener.HandlesRotating)
                     {
-                        args.Listener = listener;
                         listener.OnRotating(args);
                         handled = handled || args.Handled;
                         //if (args.Handled)
                         //	break;
+                        _previousRotateArgs[listener] = new RotateEventArgs(args, listener);
                     }
-                    handler = NativeGestureHandler.InstanceForElement(handler.Element?.Parent);
                 }
-                _previousRotateArgs = rotateArgs;
+                handler = NativeGestureHandler.InstanceForElement(handler.Element?.Parent);
             }
+            
             return handled;
         }
 
-
         bool OnPinched(MotionEvent ev, MotionEvent.PointerCoords[] coords)
         {
-            //if (_debugEvents) System.Diagnostics.Debug.WriteLine("onPinched [{0}]", _id);
             StopTapLongPress();
             _pinching = true;
             bool handled = false;
+            
+            if (_previousPinchArgs != null)
             {
-                if (_previousPinchArgs != null)
+                var handler = NativeGestureHandler.InstanceForElement(Element);
+                while (handler != null)
                 {
-                    PinchEventArgs args = new AndroidPinchEventArgs(ev, coords, _previousPinchArgs, _view, _viewLocationAtOnDown);
-                    var handler = NativeGestureHandler.InstanceForElement(Element);
-                    while (handler != null)
+                    if (handler.Listener is Listener listener)
                     {
-                        var listener = handler.Listener;
+                        var previousArgs = _previousPinchArgs.ContainsKey(listener)
+                        ? _previousPinchArgs[listener]
+                        : null;
+                        PinchEventArgs args = new AndroidPinchEventArgs(ev, coords, previousArgs, _view, listener);
                         if (listener != null && (listener.HandlesPinching || listener.HandlesPinched))
                         {
-                            args.Listener = listener;
                             listener.OnPinched(args);
                             handled = handled || args.Handled;
                             //if (args.Handled)
                             //	break;
+                            _previousPinchArgs[listener] = new PinchEventArgs(args, listener);
                         }
-                        handler = NativeGestureHandler.InstanceForElement(handler.Element?.Parent);
                     }
-                    _previousPinchArgs = null;
+                    handler = NativeGestureHandler.InstanceForElement(handler.Element?.Parent);
                 }
+                _previousPinchArgs.Clear();
             }
+            
             return handled;
         }
 
         bool OnRotated(MotionEvent ev, MotionEvent.PointerCoords[] coords)
         {
-            //if (_debugEvents) System.Diagnostics.Debug.WriteLine("onRotated [{0}]", _id);
             StopTapLongPress();
             _rotating = true;
             bool handled = false;
+            
+            if (_previousRotateArgs != null)
             {
-                if (_previousRotateArgs != null)
+                var handler = NativeGestureHandler.InstanceForElement(Element);
+                while (handler != null)
                 {
-                    RotateEventArgs args = new AndroidRotateEventArgs(ev, coords, _previousRotateArgs, _view, _viewLocationAtOnDown);
-                    var handler = NativeGestureHandler.InstanceForElement(Element);
-                    while (handler != null)
+                    if (handler.Listener is Listener listener)
                     {
-                        var listener = handler.Listener;
+                        var previousArgs = _previousRotateArgs.ContainsKey(listener)
+                        ? _previousRotateArgs[listener]
+                        : null;
+                        RotateEventArgs args = new AndroidRotateEventArgs(ev, coords, previousArgs, _view, listener);
                         if (listener != null && (listener.HandlesRotating || listener.HandlesRotated))
                         {
-                            args.Listener = listener;
                             listener.OnRotated(args);
                             handled = handled || args.Handled;
                             //if (args.Handled)
                             //	break;
+                            _previousRotateArgs[listener] = new RotateEventArgs(args, listener);
                         }
-                        handler = NativeGestureHandler.InstanceForElement(handler.Element?.Parent);
                     }
-                    _previousRotateArgs = null;
+                    handler = NativeGestureHandler.InstanceForElement(handler.Element?.Parent);
                 }
+                _previousRotateArgs.Clear();
             }
+            
             return handled;
         }
 

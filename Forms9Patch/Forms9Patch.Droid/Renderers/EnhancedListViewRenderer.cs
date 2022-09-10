@@ -25,6 +25,12 @@ namespace Forms9Patch.Droid
 
         public EnhancedListViewRenderer(Android.Content.Context context) : base(context) { }
 
+        public EnhancedListViewRenderer(Android.Content.Context context, object obj) : base(context) { }
+
+#pragma warning disable CS0618 // Type or member is obsolete
+        public EnhancedListViewRenderer(System.IntPtr intPtr, Android.Runtime.JniHandleOwnership owner) { }
+#pragma warning restore CS0618 // Type or member is obsolete
+
 
         #region ElementChanged
         protected override void OnElementChanged(ElementChangedEventArgs<Xamarin.Forms.ListView> e)
@@ -116,7 +122,7 @@ namespace Forms9Patch.Droid
             return true;
         }
 
-        DateTime _lastScrollToDateTime = DateTime.MinValue;
+        DateTime _lastScrollToDateTime = DateTime.MinValue.AddYears(1);
         int _lastScrollToOffset = 0;
         public bool ScrollTo(double offset, bool animated)
         {

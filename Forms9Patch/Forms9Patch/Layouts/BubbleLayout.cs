@@ -1,6 +1,6 @@
 ﻿#define _Forms9Patch_BubbleLayout_
 
-using System;
+using System.ComponentModel;
 using Xamarin.Forms;
 
 
@@ -9,6 +9,8 @@ namespace Forms9Patch
     /// <summary>
     /// Bubble layout.
     /// </summary>
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     class BubbleLayout : Forms9Patch.ContentView, IBubbleLayout
     {
         static BubbleLayout()
@@ -150,22 +152,18 @@ namespace Forms9Patch
         /// </summary>
         protected override void OnPropertyChanged(string propertyName = null)
         {
-            if (!P42.Utils.Environment.IsOnMainThread)
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
             {
-                Device.BeginInvokeOnMainThread(() => OnPropertyChanged(propertyName));
-                return;
-            }
+                base.OnPropertyChanged(propertyName);
 
-            base.OnPropertyChanged(propertyName);
+                if (propertyName == BackgroundImageProperty.PropertyName && BackgroundImage != null)
+                    BackgroundImage.IsBubble = true;
 
-            if (propertyName == BackgroundImageProperty.PropertyName && BackgroundImage != null)
-                BackgroundImage.IsBubble = true;
-
-            if (propertyName == PointerLengthProperty.PropertyName
-                || propertyName == HasShadowProperty.PropertyName
-                || propertyName == IsVisibleProperty.PropertyName)
-                InvalidateMeasure();
-
+                if (propertyName == PointerLengthProperty.PropertyName
+                    || propertyName == HasShadowProperty.PropertyName
+                    || propertyName == IsVisibleProperty.PropertyName)
+                    InvalidateMeasure();
+            });
         }
         #endregion PropertyChange management
 
@@ -254,6 +252,19 @@ namespace Forms9Patch
             height -= decorativePadding.VerticalThickness;
             base.LayoutChildren(x, y, width, height);
         }
+
+        internal void InternalLayout(Rectangle rect)
+        {
+            Layout(rect);
+            var decorativePadding = DecorativePadding();
+            var shadowPadding = HasShadow ? ShapeBase.ShadowPadding(this) : new Thickness();
+            rect.X = decorativePadding.Left + Padding.Left + shadowPadding.Left;
+            rect.Y = decorativePadding.Top + Padding.Top + shadowPadding.Top;
+            rect.Width -= decorativePadding.HorizontalThickness + Padding.HorizontalThickness + shadowPadding.HorizontalThickness;
+            rect.Height -= decorativePadding.VerticalThickness + Padding.VerticalThickness + shadowPadding.VerticalThickness;
+            Content.Layout(rect);
+        }
+
         #endregion Layout management
 
 

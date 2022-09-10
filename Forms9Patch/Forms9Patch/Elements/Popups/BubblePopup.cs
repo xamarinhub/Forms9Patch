@@ -1,12 +1,14 @@
 ﻿using System;
+using System.ComponentModel;
 using Xamarin.Forms;
-using System.Runtime.CompilerServices;
 
 namespace Forms9Patch
 {
     /// <summary>
     /// Forms9Patch Bubble pop-up.
     /// </summary>
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     public class BubblePopup : PopupBase
     {
         #region Properties
@@ -158,6 +160,7 @@ namespace Forms9Patch
 
 
         #region Fields
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "_bubbleLayout is disposed via DecorativeContainerView.Dispose in PopupBase.Dispose()")]
         internal BubbleLayout _bubbleLayout;
         #endregion
 
@@ -187,18 +190,16 @@ namespace Forms9Patch
         /// Initializes a new instance of the <see cref="T:Forms9Patch.BubblePopup"/> class.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="retain">If set to <c>true</c> retain.</param>
         /// <param name="popAfter">Pop after TimeSpan.</param>
-        public BubblePopup(VisualElement target, bool retain = false, TimeSpan popAfter = default) : base(target, retain, popAfter) => Init();
+        public BubblePopup(VisualElement target, TimeSpan popAfter = default) : base(target, popAfter) => Init();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="T:Forms9Patch.BubblePopup"/> class.
         /// </summary>
         /// <param name="target">Target.</param>
         /// <param name="point">Point.</param>
-        /// <param name="retain">If set to <c>true</c> retain.</param>
         /// <param name="popAfter">Pop after TimeSpan.</param>
-        public BubblePopup(VisualElement target, Point point, bool retain = false, TimeSpan popAfter = default) : base(target, retain, popAfter)
+        public BubblePopup(VisualElement target, Point point, TimeSpan popAfter = default) : base(target, popAfter)
         {
             Init();
             Point = point;
@@ -207,21 +208,9 @@ namespace Forms9Patch
         /// <summary>
         /// Initializes a new instance of the <see cref="T:Forms9Patch.BubblePopup"/> class.
         /// </summary>
-        /// <param name="target">Target.</param>
-        /// <param name="popAfter">Pop after TimeSpan.</param>
-        public BubblePopup(VisualElement target, TimeSpan popAfter) : base(target, popAfter: popAfter) => Init();
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="T:Forms9Patch.BubblePopup"/> class.
-        /// </summary>
-        /// <param name="target">Target.</param>
-        /// <param name="point">Point.</param>
-        /// <param name="popAfter">Pop after TimeSpan.</param>
-        public BubblePopup(VisualElement target, Point point, TimeSpan popAfter) : base(target, popAfter: popAfter)
-        {
-            Init();
-            Point = point;
-        }
+        /// <param name="segment"></param>
+        /// <param name="popAfter"></param>
+        public BubblePopup(Segment segment, TimeSpan popAfter = default) : base(segment._button, popAfter) => Init();
         #endregion
 
 
@@ -297,6 +286,41 @@ namespace Forms9Patch
             set => Point = new Point(double.NegativeInfinity, double.PositiveInfinity);
         }
 
+        /// <summary>
+        /// How much space is available for a popup of width and height?
+        /// </summary>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        /// <param name="targetBounds"></param>
+        /// <returns></returns>
+        protected Thickness Available(double width, double height, Rectangle targetBounds)
+        {
+            if (Target != null)
+            {
+                var targetPage = this;
+                if (targetBounds.Right > 0 && targetBounds.Left < targetPage.Bounds.Width && targetBounds.Bottom > 0 && targetBounds.Top < targetPage.Bounds.Height)
+                {
+                    var availL = targetBounds.Left - Margin.Left - PointerLength;
+                    var availR = width - targetBounds.Right - Margin.Right - PointerLength;
+                    var availT = targetBounds.Top - Margin.Top - PointerLength;
+                    var availB = height - targetBounds.Bottom - Margin.Bottom - PointerLength;
+
+                    if (WidthRequest > 0 && HorizontalOptions.Alignment != LayoutAlignment.Fill)
+                    {
+                        availL = Math.Min(availL, WidthRequest);
+                        availR = Math.Min(availR, WidthRequest);
+                    }
+                    if (HeightRequest > 0 && VerticalOptions.Alignment != LayoutAlignment.Fill)
+                    {
+                        availT = Math.Min(availT, HeightRequest);
+                        availB = Math.Min(availB, HeightRequest);
+                    }
+                    return new Thickness(availL, availT, availR, availB);
+                }
+            }
+            return new Thickness(0, 0, 0, 0);
+        }
+
         //Using the below check seems to fail to render correct size on some pop-ups!
         //Rectangle _lastBounds = Rectangle.Zero;  
         //Rectangle _lastTargetBounds = Rectangle.Zero;
@@ -339,38 +363,19 @@ namespace Forms9Patch
                 Page targetPage = this;
                 var targetBounds = Rectangle.Zero;
 
-                if (Target != null && PointerDirection != PointerDirection.None)
+                if (Target is VisualElement target && PointerDirection != PointerDirection.None)
                 {
-
-                    // STEP 1 : WHERE DOES THE CONTENT BEST FIT?
-
                     targetBounds = Target is PopupBase popup
-                        ? DependencyService.Get<IDescendentBounds>().PageDescendentBounds(targetPage, popup.DecorativeContainerView)
-                        : DependencyService.Get<IDescendentBounds>().PageDescendentBounds(targetPage, Target);
+                            ? DependencyService.Get<IDescendentBounds>().PageDescendentBounds(targetPage, popup.DecorativeContainerView)
+                            : DependencyService.Get<IDescendentBounds>().PageDescendentBounds(targetPage, Target);
 
-                    if (targetBounds.Width < 0 && targetBounds.Height < 0 && targetBounds.X < 0 && targetBounds.Y < 0)
-                        return;
-
-                    //if (targetBounds.Right > targetPage.Bounds.Left && targetBounds.Left < targetPage.Bounds.Right && targetBounds.Bottom > targetPage.Bounds.Top && targetBounds.Top < targetPage.Bounds.Bottom)
-                    if (targetBounds.Right > 0 && targetBounds.Left < targetPage.Bounds.Width && targetBounds.Bottom > 0 && targetBounds.Top < targetPage.Bounds.Height)
+                    if (Available(width, height, targetBounds) is Thickness available && !available.IsEmpty())
                     {
-                        var availL = targetBounds.Left - Margin.Left - PointerLength;
-                        var availR = width - targetBounds.Right - Margin.Right - PointerLength;
-                        var availT = targetBounds.Top - Margin.Top - PointerLength;
-                        var availB = height - targetBounds.Bottom - Margin.Bottom - PointerLength;
 
                         if (WidthRequest > 0 && HorizontalOptions.Alignment != LayoutAlignment.Fill)
-                        {
-                            availL = Math.Min(availL, WidthRequest);
-                            availR = Math.Min(availR, WidthRequest);
                             hzModal = Math.Min(hzModal, WidthRequest);
-                        }
                         if (HeightRequest > 0 && VerticalOptions.Alignment != LayoutAlignment.Fill)
-                        {
-                            availT = Math.Min(availT, HeightRequest);
-                            availB = Math.Min(availB, HeightRequest);
                             vtModal = Math.Min(vtModal, HeightRequest);
-                        }
 
                         double hzExtra = -1, vtExtra = -1;
                         var hzPointerDir = PointerDirection.None;
@@ -379,25 +384,25 @@ namespace Forms9Patch
                         var hzSizeRequest = new SizeRequest();
                         if (PreferredPointerDirection != PointerDirection.None)
                         {
-                            if (PreferredPointerDirection.DownAllowed() && availT > vtAvail)
+                            if (PreferredPointerDirection.DownAllowed() && available.Top > vtAvail)
                             {
                                 vtPointerDir = PointerDirection.Down;
-                                vtAvail = availT;
+                                vtAvail = available.Top;
                             }
-                            if (PreferredPointerDirection.UpAllowed() && availB > vtAvail)
+                            if (PreferredPointerDirection.UpAllowed() && available.Bottom > vtAvail)
                             {
                                 vtPointerDir = PointerDirection.Up;
-                                vtAvail = availB;
+                                vtAvail = available.Bottom;
                             }
-                            if (PreferredPointerDirection.LeftAllowed() && availR > hzAvail)
+                            if (PreferredPointerDirection.LeftAllowed() && available.Right > hzAvail)
                             {
                                 hzPointerDir = PointerDirection.Left;
-                                hzAvail = availR;
+                                hzAvail = available.Right;
                             }
-                            if (PreferredPointerDirection.RightAllowed() && availL > hzAvail)
+                            if (PreferredPointerDirection.RightAllowed() && available.Left > hzAvail)
                             {
                                 hzPointerDir = PointerDirection.Right;
-                                hzAvail = availL;
+                                hzAvail = available.Left;
                             }
                             if (vtAvail > 0)
                             {
@@ -450,25 +455,25 @@ namespace Forms9Patch
                             vtPointerDir = PointerDirection.None;
                             vtSizeRequest = new SizeRequest();
                             hzSizeRequest = new SizeRequest();
-                            if (PointerDirection.DownAllowed() && availT > vtAvail)
+                            if (PointerDirection.DownAllowed() && available.Top > vtAvail)
                             {
                                 vtPointerDir = PointerDirection.Down;
-                                vtAvail = availT;
+                                vtAvail = available.Top;
                             }
-                            if (PointerDirection.UpAllowed() && availB > vtAvail)
+                            if (PointerDirection.UpAllowed() && available.Bottom > vtAvail)
                             {
                                 vtPointerDir = PointerDirection.Up;
-                                vtAvail = availB;
+                                vtAvail = available.Bottom;
                             }
-                            if (PointerDirection.LeftAllowed() && availR > hzAvail)
+                            if (PointerDirection.LeftAllowed() && available.Right > hzAvail)
                             {
                                 hzPointerDir = PointerDirection.Left;
-                                hzAvail = availR;
+                                hzAvail = available.Right;
                             }
-                            if (PointerDirection.RightAllowed() && availL > hzAvail)
+                            if (PointerDirection.RightAllowed() && available.Left > hzAvail)
                             {
                                 hzPointerDir = PointerDirection.Right;
-                                hzAvail = availL;
+                                hzAvail = available.Left;
                             }
 
                             if (vtAvail > 0)
@@ -613,7 +618,7 @@ namespace Forms9Patch
                     }
                     _bubbleLayout.PointerAxialPosition = tuple.Item2;
                     var newBounds = new Rectangle(bounds.X - targetPage.Padding.Left, bounds.Y - targetPage.Padding.Top, bounds.Width, bounds.Height);
-                    Xamarin.Forms.Layout.LayoutChildIntoBoundingRegion(_bubbleLayout, newBounds);
+                    _bubbleLayout.InternalLayout(newBounds);
                     _lastLayout = DateTime.Now;
                 }
 

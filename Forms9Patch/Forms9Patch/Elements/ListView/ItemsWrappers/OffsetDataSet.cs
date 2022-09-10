@@ -1,7 +1,10 @@
 using System;
+using System.ComponentModel;
 
 namespace Forms9Patch
 {
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     internal class OffsetDataSetBase
     {
         public ItemWrapper ItemWrapper { get; private set; }
@@ -43,6 +46,8 @@ namespace Forms9Patch
         }
     }
 
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     internal class DeepDataSet : OffsetDataSetBase
     {
         public int[] Index { get; }

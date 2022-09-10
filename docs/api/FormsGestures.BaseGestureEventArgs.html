@@ -10,7 +10,7 @@
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Class BaseGestureEventArgs
    | Forms9Patch ">
-    <meta name="generator" content="docfx 2.40.8.0">
+    <meta name="generator" content="docfx 2.56.1.0">
     
     <link rel="shortcut icon" href="../favicon.ico">
     <link rel="stylesheet" href="../styles/docfx.vendor.css">
@@ -89,14 +89,36 @@
   <div class="inheritance">
     <h5>Inheritance</h5>
     <div class="level0"><a class="xref" href="https://docs.microsoft.com/dotnet/api/system.object">Object</a></div>
-    <div class="level1"><span class="xref">BaseGestureEventArgs</span></div>
-      <div class="level2"><a class="xref" href="FormsGestures.DownUpEventArgs.html">DownUpEventArgs</a></div>
-      <div class="level2"><a class="xref" href="FormsGestures.PanEventArgs.html">PanEventArgs</a></div>
-      <div class="level2"><a class="xref" href="FormsGestures.PinchEventArgs.html">PinchEventArgs</a></div>
-      <div class="level2"><a class="xref" href="FormsGestures.RightClickEventArgs.html">RightClickEventArgs</a></div>
-      <div class="level2"><a class="xref" href="FormsGestures.RotateEventArgs.html">RotateEventArgs</a></div>
-      <div class="level2"><a class="xref" href="FormsGestures.SwipeEventArgs.html">SwipeEventArgs</a></div>
-      <div class="level2"><a class="xref" href="FormsGestures.TapEventArgs.html">TapEventArgs</a></div>
+    <div class="level1"><a class="xref" href="https://docs.microsoft.com/dotnet/api/system.eventargs">EventArgs</a></div>
+    <div class="level2"><span class="xref">BaseGestureEventArgs</span></div>
+      <div class="level3"><a class="xref" href="FormsGestures.DownUpEventArgs.html">DownUpEventArgs</a></div>
+      <div class="level3"><a class="xref" href="FormsGestures.PanEventArgs.html">PanEventArgs</a></div>
+      <div class="level3"><a class="xref" href="FormsGestures.PinchEventArgs.html">PinchEventArgs</a></div>
+      <div class="level3"><a class="xref" href="FormsGestures.RightClickEventArgs.html">RightClickEventArgs</a></div>
+      <div class="level3"><a class="xref" href="FormsGestures.RotateEventArgs.html">RotateEventArgs</a></div>
+      <div class="level3"><a class="xref" href="FormsGestures.SwipeEventArgs.html">SwipeEventArgs</a></div>
+      <div class="level3"><a class="xref" href="FormsGestures.TapEventArgs.html">TapEventArgs</a></div>
+  </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <a class="xref" href="https://docs.microsoft.com/dotnet/api/system.eventargs.empty">EventArgs.Empty</a>
+    </div>
+    <div>
+      <a class="xref" href="https://docs.microsoft.com/dotnet/api/system.object.equals#System_Object_Equals_System_Object_System_Object_">Object.Equals(Object, Object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://docs.microsoft.com/dotnet/api/system.object.gettype#System_Object_GetType">Object.GetType()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://docs.microsoft.com/dotnet/api/system.object.memberwiseclone#System_Object_MemberwiseClone">Object.MemberwiseClone()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://docs.microsoft.com/dotnet/api/system.object.referenceequals#System_Object_ReferenceEquals_System_Object_System_Object_">Object.ReferenceEquals(Object, Object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://docs.microsoft.com/dotnet/api/system.object.tostring#System_Object_ToString">Object.ToString()</a>
+    </div>
   </div>
   <h6><strong>Namespace</strong>: <a class="xref" href="FormsGestures.html">FormsGestures</a></h6>
   <h6><strong>Assembly</strong>: FormsGestures.dll</h6>
@@ -169,14 +191,14 @@
   </table>
   
   
-  <a id="FormsGestures_BaseGestureEventArgs_Center_" data-uid="FormsGestures.BaseGestureEventArgs.Center*"></a>
-  <h4 id="FormsGestures_BaseGestureEventArgs_Center" data-uid="FormsGestures.BaseGestureEventArgs.Center">Center</h4>
-  <div class="markdown level1 summary"><p>center of touch event</p>
+  <a id="FormsGestures_BaseGestureEventArgs_ElementPosition_" data-uid="FormsGestures.BaseGestureEventArgs.ElementPosition*"></a>
+  <h4 id="FormsGestures_BaseGestureEventArgs_ElementPosition" data-uid="FormsGestures.BaseGestureEventArgs.ElementPosition">ElementPosition</h4>
+  <div class="markdown level1 summary"><p>current position of VisualElement in Window coordinates</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public virtual Point Center { get; protected set; }</code></pre>
+    <pre><code class="lang-csharp hljs">public virtual Rectangle ElementPosition { get; protected set; }</code></pre>
   </div>
   <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -188,7 +210,59 @@
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">Point</span></td>
+        <td><a class="xref" href="https://docs.microsoft.com/dotnet/api/xamarin.forms.rectangle">Rectangle</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="FormsGestures_BaseGestureEventArgs_ElementTouches_" data-uid="FormsGestures.BaseGestureEventArgs.ElementTouches*"></a>
+  <h4 id="FormsGestures_BaseGestureEventArgs_ElementTouches" data-uid="FormsGestures.BaseGestureEventArgs.ElementTouches">ElementTouches</h4>
+  <div class="markdown level1 summary"><p>Set of touch points, in VisualElement coordinates, that make up this event</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public virtual Point[] ElementTouches { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://docs.microsoft.com/dotnet/api/xamarin.forms.point">Point</a>[]</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="FormsGestures_BaseGestureEventArgs_Event_" data-uid="FormsGestures.BaseGestureEventArgs.Event*"></a>
+  <h4 id="FormsGestures_BaseGestureEventArgs_Event" data-uid="FormsGestures.BaseGestureEventArgs.Event">Event</h4>
+  <div class="markdown level1 summary"><p>Name of event that has been triggered</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public string Event { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://docs.microsoft.com/dotnet/api/system.string">String</a></td>
         <td></td>
       </tr>
     </tbody>
@@ -203,6 +277,32 @@
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
     <pre><code class="lang-csharp hljs">public bool Handled { get; set; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://docs.microsoft.com/dotnet/api/system.boolean">Boolean</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="FormsGestures_BaseGestureEventArgs_IsTouchCenterInView_" data-uid="FormsGestures.BaseGestureEventArgs.IsTouchCenterInView*"></a>
+  <h4 id="FormsGestures_BaseGestureEventArgs_IsTouchCenterInView" data-uid="FormsGestures.BaseGestureEventArgs.IsTouchCenterInView">IsTouchCenterInView</h4>
+  <div class="markdown level1 summary"><p>Tests if the TouchCenter is within the bounds of the view</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public bool IsTouchCenterInView { get; }</code></pre>
   </div>
   <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -273,14 +373,14 @@
   </table>
   
   
-  <a id="FormsGestures_BaseGestureEventArgs_Touches_" data-uid="FormsGestures.BaseGestureEventArgs.Touches*"></a>
-  <h4 id="FormsGestures_BaseGestureEventArgs_Touches" data-uid="FormsGestures.BaseGestureEventArgs.Touches">Touches</h4>
-  <div class="markdown level1 summary"><p>all of the touch points that make up this touch event</p>
+  <a id="FormsGestures_BaseGestureEventArgs_WindowTouches_" data-uid="FormsGestures.BaseGestureEventArgs.WindowTouches*"></a>
+  <h4 id="FormsGestures_BaseGestureEventArgs_WindowTouches" data-uid="FormsGestures.BaseGestureEventArgs.WindowTouches">WindowTouches</h4>
+  <div class="markdown level1 summary"><p>Set of touch points, in Window coordinates, that make up this touch event</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public virtual Point[] Touches { get; protected set; }</code></pre>
+    <pre><code class="lang-csharp hljs">public virtual Point[] WindowTouches { get; }</code></pre>
   </div>
   <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -292,39 +392,99 @@
     </thead>
     <tbody>
       <tr>
-        <td><span class="xref">Point</span>[]</td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
-  
-  
-  <a id="FormsGestures_BaseGestureEventArgs_ViewPosition_" data-uid="FormsGestures.BaseGestureEventArgs.ViewPosition*"></a>
-  <h4 id="FormsGestures_BaseGestureEventArgs_ViewPosition" data-uid="FormsGestures.BaseGestureEventArgs.ViewPosition">ViewPosition</h4>
-  <div class="markdown level1 summary"><p>current position of view</p>
-</div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="decalaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public virtual Rectangle ViewPosition { get; protected set; }</code></pre>
-  </div>
-  <h5 class="propertyValue">Property Value</h5>
-  <table class="table table-bordered table-striped table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><span class="xref">Rectangle</span></td>
+        <td><a class="xref" href="https://docs.microsoft.com/dotnet/api/xamarin.forms.point">Point</a>[]</td>
         <td></td>
       </tr>
     </tbody>
   </table>
   <h3 id="methods">Methods
   </h3>
+  
+  
+  <a id="FormsGestures_BaseGestureEventArgs_Center_" data-uid="FormsGestures.BaseGestureEventArgs.Center*"></a>
+  <h4 id="FormsGestures_BaseGestureEventArgs_Center_Xamarin_Forms_Point___" data-uid="FormsGestures.BaseGestureEventArgs.Center(Xamarin.Forms.Point[])">Center(Point[])</h4>
+  <div class="markdown level1 summary"><p>center of a set of touch points</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public virtual Point Center(Point[] touches)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://docs.microsoft.com/dotnet/api/xamarin.forms.point">Point</a>[]</td>
+        <td><span class="parametername">touches</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://docs.microsoft.com/dotnet/api/xamarin.forms.point">Point</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <a id="FormsGestures_BaseGestureEventArgs_Contains_" data-uid="FormsGestures.BaseGestureEventArgs.Contains*"></a>
+  <h4 id="FormsGestures_BaseGestureEventArgs_Contains_Xamarin_Forms_Point_" data-uid="FormsGestures.BaseGestureEventArgs.Contains(Xamarin.Forms.Point)">Contains(Point)</h4>
+  <div class="markdown level1 summary"><p>Tests if a point, in Window coordinates, is within the bounds of the view</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public bool Contains(Point p)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://docs.microsoft.com/dotnet/api/xamarin.forms.point">Point</a></td>
+        <td><span class="parametername">p</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://docs.microsoft.com/dotnet/api/system.boolean">Boolean</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
   
   
   <a id="FormsGestures_BaseGestureEventArgs_Equals_" data-uid="FormsGestures.BaseGestureEventArgs.Equals*"></a>
@@ -411,6 +571,8 @@
       </tr>
     </tbody>
   </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><a class="xref" href="https://docs.microsoft.com/dotnet/api/system.object.equals#System_Object_Equals_System_Object_">Object.Equals(Object)</a></div>
   
   
   <a id="FormsGestures_BaseGestureEventArgs_GetHashCode_" data-uid="FormsGestures.BaseGestureEventArgs.GetHashCode*"></a>
@@ -437,6 +599,8 @@
       </tr>
     </tbody>
   </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><a class="xref" href="https://docs.microsoft.com/dotnet/api/system.object.gethashcode#System_Object_GetHashCode">Object.GetHashCode()</a></div>
   
   
   <a id="FormsGestures_BaseGestureEventArgs_ValueFrom_" data-uid="FormsGestures.BaseGestureEventArgs.ValueFrom*"></a>
@@ -466,6 +630,12 @@
     </tbody>
   </table>
   <h3 id="extensionmethods">Extension Methods</h3>
+  <div>
+      <a class="xref" href="P42.Utils.DebugExtensions.html#P42_Utils_DebugExtensions_AddToCensus_System_Object_">DebugExtensions.AddToCensus(Object)</a>
+  </div>
+  <div>
+      <a class="xref" href="P42.Utils.DebugExtensions.html#P42_Utils_DebugExtensions_RemoveFromCensus_System_Object_">DebugExtensions.RemoveFromCensus(Object)</a>
+  </div>
   <div>
       <a class="xref" href="P42.Utils.ReflectionExtensions.html#P42_Utils_ReflectionExtensions_GetProperties_System_Object_">ReflectionExtensions.GetProperties(Object)</a>
   </div>

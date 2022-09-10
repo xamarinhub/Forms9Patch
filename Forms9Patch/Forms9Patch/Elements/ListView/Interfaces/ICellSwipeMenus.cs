@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Collections.Generic;
 
 namespace Forms9Patch
@@ -6,6 +7,8 @@ namespace Forms9Patch
     /// <summary>
     /// Interface to implement Swipe Menus in content views for Forms9Patch ListView cells
     /// </summary>
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     public interface ICellSwipeMenus
     {
         /// <summary>

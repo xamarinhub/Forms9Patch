@@ -1,12 +1,13 @@
 using Xamarin.Forms;
-using System;
-
+using System.ComponentModel;
 
 namespace Forms9Patch
 {
     /// <summary>
     /// Forms9Patch Frame layout.
     /// </summary>
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     public class Frame : Forms9Patch.ContentView
     {
         #region Constructor
@@ -33,16 +34,13 @@ namespace Forms9Patch
         /// <param name="propertyName"></param>
         protected override void OnPropertyChanged(string propertyName = null)
         {
-            if (!P42.Utils.Environment.IsOnMainThread)
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
             {
-                Device.BeginInvokeOnMainThread(() => OnPropertyChanged(propertyName));
-                return;
-            }
+                base.OnPropertyChanged(propertyName);
 
-            base.OnPropertyChanged(propertyName);
-
-            if (propertyName == HasShadowProperty.PropertyName)
-                InvalidateMeasure();
+                if (propertyName == HasShadowProperty.PropertyName)
+                    InvalidateMeasure();
+            });
         }
         #endregion
     }

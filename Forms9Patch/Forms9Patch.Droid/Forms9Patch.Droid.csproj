@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -15,7 +15,8 @@
     <FileAlignment>512</FileAlignment>
     <AndroidResgenFile>Resources\Resource.Designer.cs</AndroidResgenFile>
     <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
-    <TargetFrameworkVersion>v9.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v10.0</TargetFrameworkVersion>
+    <ReleaseVersion></ReleaseVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -27,6 +28,7 @@
     <WarningLevel>4</WarningLevel>
 <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
 <LangVersion>7.3</LangVersion>
+<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>full</DebugType>
@@ -36,6 +38,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <LangVersion>7.3</LangVersion>
+<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
@@ -73,35 +76,47 @@
     <Compile Include="Renderers\EnhancedListViewRenderer.cs" />
     <Compile Include="Renderers\HardwareKeyPageRenderer.cs" />
     <Compile Include="Renderers\LabelRenderer.cs" />
-    <Compile Include="Renderers\PageRenderer.cs" />
     <Compile Include="Services\ApplicationInfoService.cs" />
     <Compile Include="Services\DescendentBounds.cs" />
     <Compile Include="Services\FontService.cs" />
-    <Compile Include="Services\HtmlToPngService.cs" />
+    <Compile Include="Services\ToPngService.cs" />
     <Compile Include="Services\KeyboardService.cs" />
     <Compile Include="Services\OsInfoService.cs" />
-    <Compile Include="Services\WebViewExtensionsService.cs" />
+    <Compile Include="Services\PrintService.cs" />
     <Compile Include="Models\Popup.cs" />
     <Compile Include="Services\AudioService.cs" />
     <Compile Include="Services\HapticsService.cs" />
     <Compile Include="Extensions\TextExtensions.cs" />
     <Compile Include="Models\TextControlState.cs" />
     <Compile Include="Extensions\TextPaintExtensions.cs" />
+    <Compile Include="Popup\PopupPageRenderer.cs" />
+    <Compile Include="Popup\PopupPlatformDroid.cs" />
+    <Compile Include="Popup\RgGestureDetectorListener.cs" />
+    <Compile Include="Popup\PlatformExtension.cs" />
+    <Compile Include="Effects\EntryClearButtonEffect.cs" />
+    <Compile Include="Services\ToPdfService.cs" />
+    <Compile Include="Extensions\AndroidWebViewExtensions.cs" />
+    <Compile Include="Effects\EntryNoUnderline.cs" />
+    <Compile Include="Services\RendererResolver.cs" />
+    <Compile Include="Models\FontRecord.cs" />
+    <Compile Include="Effects\EditorNoUnderline.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Xamarin.Android.Support.v7.AppCompat" Version="28.0.0.1" />
+    <!--
+    <PackageReference Include="Xamarin.AndroidX.AppCompat" Version="1.3.1.1" />
+    -->
     <PackageReference Include="Xamarin.Forms">
-      <Version>4.0.0.497661</Version>
+      <Version>5.0.0.2337</Version>
     </PackageReference>
     <PackageReference Include="Newtonsoft.Json">
-      <Version>12.0.2</Version>
-    </PackageReference>
-    <PackageReference Include="Rg.Plugins.Popup">
-      <Version>1.1.5.188</Version>
+      <Version>13.0.1</Version>
     </PackageReference>
     <PackageReference Include="SkiaSharp.Views.Forms">
-      <Version>1.68.0</Version>
+      <Version>2.80.3</Version>
     </PackageReference>
+    <!--
+    <PackageReference Include="Xamarin.AndroidX.Migration" Version="1.0.8" />
+    -->
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\P42.Utils\P42.Utils.Droid\P42.Utils.Droid.csproj">
@@ -109,11 +124,11 @@
       <Name>P42.Utils.Droid</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\P42.Utils\P42.Utils\P42.Utils.csproj">
-      <Project>{A519F4E6-541B-4E7B-A700-6C2BB2019FE6}</Project>
+      <Project>{ABD591A3-A0A5-4B6F-9DDA-E6937052F595}</Project>
       <Name>P42.Utils</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\P42.Utils\P42.NumericalMethods\P42.NumericalMethods.csproj">
-      <Project>{8A7065F6-5428-457F-8C5B-1DE69A7E0C12}</Project>
+      <Project>{46380F62-7AA8-4C53-BB68-C179F98CA61A}</Project>
       <Name>P42.NumericalMethods</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\FormsGestures\FormsGestures.Droid\FormsGestures.Droid.csproj">
@@ -121,15 +136,15 @@
       <Name>FormsGestures.Droid</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\FormsGestures\FormsGestures\FormsGestures.csproj">
-      <Project>{2079B099-964B-4CFF-8EF6-9443B462258A}</Project>
+      <Project>{C01DDE7B-6B22-4315-AD7C-27CBD932B07C}</Project>
       <Name>FormsGestures</Name>
     </ProjectReference>
     <ProjectReference Include="..\Forms9Patch\Forms9Patch.csproj">
-      <Project>{3415330C-BD16-4AB9-B477-7785B420D3AD}</Project>
+      <Project>{8432B242-B047-4B7D-B565-2F0FBFF56058}</Project>
       <Name>Forms9Patch</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\MimeSharp\MimeSharp\MimeSharp.csproj">
-      <Project>{FDDCCA71-9A68-43BC-97F1-73A55F551061}</Project>
+      <Project>{F7CC8202-85ED-498A-8CE0-2FA856F2D4CE}</Project>
       <Name>MimeSharp</Name>
     </ProjectReference>
   </ItemGroup>
@@ -144,6 +159,9 @@
     <Folder Include="ListView\" />
     <Folder Include="PlatformViews\" />
   </ItemGroup-->
+  <ItemGroup>
+    <Folder Include="Popup\" />
+  </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
   <PropertyGroup>
     <NugetOutputDir>C:\Users\ben\Development\Forms9Patch2\Forms9Patch\Forms9Patch.NuGet\lib\MonoAndroid10</NugetOutputDir>

@@ -11,7 +11,7 @@
     <AssemblyName>Forms9Patch.UWP</AssemblyName>
     <DefaultLanguage>en-US</DefaultLanguage>
     <TargetPlatformIdentifier>UAP</TargetPlatformIdentifier>
-    <TargetPlatformVersion Condition=" '$(TargetPlatformVersion)' == '' ">10.0.16299.0</TargetPlatformVersion>
+    <TargetPlatformVersion Condition=" '$(TargetPlatformVersion)' == '' ">10.0.18362.0</TargetPlatformVersion>
     <TargetPlatformMinVersion>10.0.16299.0</TargetPlatformMinVersion>
     <MinimumVisualStudioVersion>14</MinimumVisualStudioVersion>
     <FileAlignment>512</FileAlignment>
@@ -109,26 +109,23 @@
   </PropertyGroup>
   <!-- NUGET PACKAGES -->
   <ItemGroup>
-    <PackageReference Include="Rg.Plugins.Popup">
-      <Version>1.1.5.188</Version>
-    </PackageReference>
     <PackageReference Include="SharpDX.Direct2D1">
       <Version>4.2.0</Version>
     </PackageReference>
     <PackageReference Include="SkiaSharp">
-      <Version>1.68.0</Version>
+      <Version>2.80.3</Version>
     </PackageReference>
     <PackageReference Include="SkiaSharp.Svg">
       <Version>1.60.0</Version>
     </PackageReference>
     <PackageReference Include="SkiaSharp.Views">
-      <Version>1.68.0</Version>
+      <Version>2.80.3</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform">
-      <Version>6.2.8</Version>
+      <Version>6.2.13</Version>
     </PackageReference>
     <PackageReference Include="Xamarin.Forms">
-      <Version>4.0.0.497661</Version>
+      <Version>5.0.0.2337</Version>
     </PackageReference>
   </ItemGroup>
   <!-- XF Nuget Project references -->
@@ -183,21 +180,30 @@
     <Compile Include="HardwareKeyListener\HardwareKeyListenerEffect.cs" />
     <Compile Include="HardwareKeyListener\HardwareKeyPageRenderer.cs" />
     <Compile Include="Models\MetaFont.cs" />
+    <Compile Include="Printing\PrintHelper.cs" />
     <Compile Include="Models\Settings.cs" />
     <Compile Include="Models\SizeI.cs" />
+    <Compile Include="Printing\WebViewPrintHelper.cs" />
+    <Compile Include="Popup\PopupPageRenderer.cs" />
+    <Compile Include="Popup\PopupPlatformUWP.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Renderers\ColorGradientBoxRenderer.cs" />
     <Compile Include="Renderers\EnhancedListViewRenderer.cs" />
     <Compile Include="Renderers\LabeLRenderer.cs" />
     <Compile Include="Services\ApplicationInfoService.cs" />
     <Compile Include="Services\DescendentBounds.cs" />
     <Compile Include="Services\FontFamilies.cs" />
     <Compile Include="Services\FontService.cs" />
-    <Compile Include="Services\HtmlToPngService.cs" />
+    <Compile Include="Services\ToPngService.cs" />
     <Compile Include="Services\KeyboardService.cs" />
     <Compile Include="Services\OsInfoService.cs" />
-    <Compile Include="Services\WebViewExtensionService.cs" />
+    <Compile Include="Printing\PrintService.cs" />
+    <Compile Include="Services\RendererResolver.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Assets\moderateMargins.svg" />
+    <Content Include="Assets\narrowMargins.svg" />
+    <Content Include="Assets\wideMargins.svg" />
     <Content Include="Properties\Forms9Patch.UWP.rd.xml" />
   </ItemGroup>
   <ItemGroup>
@@ -212,13 +218,23 @@
   <Import Project="$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent Condition=" '$(Configuration)'=='Release' And '$(SolutionName)'=='Forms9Patch' ">
-      mkdir "$(SolutionDir)Forms9Patch\Forms9Patch.NuGet\lib\uap10.0\Forms9Patch.UWP"
-      xcopy "$(SolutionDir)FormsGestures\FormsGestures.UWP\Properties\FormsGestures.UWP.rd.xml" "$(SolutionDir)Forms9Patch\Forms9Patch.NuGet\lib\uap10.0\FormsGestures.UWP\Properties\" /Y
-      xcopy "$(SolutionDir)Forms9Patch\Forms9Patch.UWP\Properties\Forms9Patch.UWP.rd.xml" "$(SolutionDir)Forms9Patch\Forms9Patch.NuGet\lib\uap10.0\Forms9Patch.UWP\Properties\" /Y
-      xcopy "$(TargetDir)Forms9Patch.*"  "$(SolutionDir)Forms9Patch\Forms9Patch.NuGet\lib\uap10.0\" /Y
-      xcopy "$(TargetDir)FormsGestures.*"  "$(SolutionDir)Forms9Patch\Forms9Patch.NuGet\lib\uap10.0\" /Y
       xcopy "$(TargetDir)P42.*"  "$(SolutionDir)Forms9Patch\Forms9Patch.NuGet\lib\uap10.0\" /Y
       xcopy "$(TargetDir)MimeSharp.*"  "$(SolutionDir)Forms9Patch\Forms9Patch.NuGet\lib\uap10.0\" /Y
+
+      mkdir "$(SolutionDir)FormsGestures\FormsGestures.UWP\bin\Release\FormsGestures.UWP\"
+      xcopy "$(SolutionDir)FormsGestures\FormsGestures.UWP\bin\Release\FormsGestures.UWP\" "$(SolutionDir)Forms9Patch\Forms9Patch.NuGet\lib\uap10.0\FormsGestures.UWP\" /Y
+      xcopy "$(SolutionDir)FormsGestures\FormsGestures.UWP\Properties\FormsGestures.UWP.rd.xml" "$(SolutionDir)Forms9Patch\Forms9Patch.NuGet\lib\uap10.0\FormsGestures.UWP\Properties\" /Y
+      xcopy "$(SolutionDir)FormsGestures\FormsGestures.UWP\obj\Release\FormsGestures.UWP.xr.xml" "$(SolutionDir)Forms9Patch\Forms9Patch.NuGet\lib\uap10.0\FormsGestures.UWP\" /Y
+      xcopy "$(SolutionDir)FormsGestures\FormsGestures.UWP\obj\Release\Microsoft.UI.Xaml\DensityStyles\Compact.xaml" "$(SolutionDir)Forms9Patch\Forms9Patch.NuGet\lib\uap10.0\FormsGestures.UWP\Microsoft.UI.Xaml\DensityStyles\" /Y
+      xcopy "$(TargetDir)FormsGestures.*"  "$(SolutionDir)Forms9Patch\Forms9Patch.NuGet\lib\uap10.0\" /Y
+
+      mkdir "$(SolutionDir)Forms9Patch\Forms9Patch.NuGet\lib\uap10.0\Forms9Patch.UWP"
+      mkdir "$(SolutionDir)Forms9Patch\Forms9Patch.NuGet\lib\uap10.0\Forms9Patch.UWP\Assets"
+      xcopy "$(SolutionDir)Forms9Patch\Forms9Patch.UWP\bin\Release\Forms9Patch.UWP\" "$(SolutionDir)Forms9Patch\Forms9Patch.NuGet\lib\uap10\Forms9Patch.UWP\" /Y
+      xcopy "$(SolutionDir)Forms9Patch\Forms9Patch.UWP\Properties\Forms9Patch.UWP.rd.xml" "$(SolutionDir)Forms9Patch\Forms9Patch.NuGet\lib\uap10.0\Forms9Patch.UWP\Properties\" /Y
+      xcopy "$(SolutionDir)Forms9Patch\Forms9Patch.UWP\obj\Release\Forms9Patch.UWP.xr.xml" "$(SolutionDir)Forms9Patch\Forms9Patch.NuGet\lib\uap10.0\Forms9Patch.UWP\" /Y
+      xcopy "$(SolutionDir)Forms9Patch\Forms9Patch.UWP\Assets\*.*" "$(SolutionDir)Forms9Patch\Forms9Patch.NuGet\lib\uap10.0\Forms9Patch.UWP\Assets\" /Y
+      xcopy "$(TargetDir)Forms9Patch.*"  "$(SolutionDir)Forms9Patch\Forms9Patch.NuGet\lib\uap10.0\" /Y
     </PostBuildEvent>
     <!-->
       xcopy "$(ProjectDir)obj\Release\EnhancedListView.Resources.xbf" "$(SolutionDir)Forms9Patch\Forms9Patch.NuGet\lib\uap10.0\Forms9Patch.UWP\" /Y

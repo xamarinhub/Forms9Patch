@@ -1,11 +1,15 @@
 ﻿using System;
+using System.ComponentModel;
 using Xamarin.Forms;
 
 namespace Forms9Patch
 {
+
     /// <summary>
     /// Forms9Patch Modal popup.
     /// </summary>
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     public class ModalPopup : PopupBase
     {
         #region Properties
@@ -40,30 +44,44 @@ namespace Forms9Patch
             set => SetValue(LocationProperty, value);
         }
 
-        /*
-		public double TranslationX {
-			get { return (double)GetValue (TranslationXProperty); }
-			set { SetValue (TranslationXProperty, value); }
-		}
-		public double TranslationY {
-			get { return (double)GetValue (TranslationYProperty); }
-			set { SetValue (TranslationYProperty, value); }
-		}
-		*/
+        #endregion
+
+
+        #region Scale
+        #region Scale property
+        /// <summary>
+        /// BindableProperty for Scale property
+        /// </summary>
+        public new static readonly BindableProperty ScaleProperty = BindableProperty.Create(nameof(Scale), typeof(double), typeof(ActivityIndicatorPopup), default(double));
+        /// <summary>
+        /// the scale of the content of the popup
+        /// </summary>
+        public new double Scale
+        {
+            get { return (double)GetValue(ScaleProperty); }
+            set { SetValue(ScaleProperty, value); }
+        }
+        #endregion
+
         #endregion
 
         #endregion
 
 
         #region Fields
-        Frame _frame;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "_frame is disposed via DecorativeContainerView.Dispose() in PopupBase.Dispose()")]
+        readonly Frame _frame;
         #endregion
 
 
         #region Constructors
-        void Init()
+        /// <summary>
+        /// Initializes a new instance of the <see cref="T:Forms9Patch.ModalPopup"/> class.
+        /// </summary>
+        /// <param name="popAfter">Pop after TimeSpan.</param>
+        public ModalPopup(TimeSpan popAfter = default) : base(popAfter: popAfter)
         {
-            _frame = new Forms9Patch.Frame
+            _frame = new Frame
             {
                 Padding = Padding,
                 HasShadow = HasShadow,
@@ -74,20 +92,6 @@ namespace Forms9Patch
             };
             DecorativeContainerView = _frame;
         }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="T:Forms9Patch.ModalPopup"/> class.
-        /// </summary>
-        /// <param name="retain">If set to <c>true</c> retain.</param>
-        /// <param name="popAfter">Pop after TimeSpan.</param>
-        public ModalPopup(bool retain = false, TimeSpan popAfter = default) : base(retain: retain, popAfter: popAfter) => Init();
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="T:Forms9Patch.ModalPopup"/> class.
-        /// </summary>
-        /// <param name="popAfter">Pop after TimeSpan.</param>
-        public ModalPopup(TimeSpan popAfter) : base(popAfter: popAfter) => Init();
-
         #endregion
 
 
@@ -98,41 +102,44 @@ namespace Forms9Patch
         /// <param name="propertyName">The name of the property that changed.</param>
         protected override void OnPropertyChanged(string propertyName = null)
         {
-            if (!P42.Utils.Environment.IsOnMainThread)
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
             {
-                Device.BeginInvokeOnMainThread(() => OnPropertyChanged(propertyName));
-                return;
-            }
 
-            //System.Diagnostics.Debug.WriteLine ($"{this.GetType().FullName}.OnPropertyChanged property={propertyName}");
-            //if (propertyName == IsPresentedProperty.PropertyName) {
-            if (propertyName == TranslationXProperty.PropertyName)
-            {
-                Content.TranslationX = TranslationX;
-                return;
-            }
-            if (propertyName == TranslationYProperty.PropertyName)
-            {
-                Content.TranslationY = TranslationY;
-                return;
-            }
-            if (propertyName == RotationProperty.PropertyName)
-            {
-                Content.Rotation = Rotation;
-                return;
-            }
-            if (propertyName == RotationXProperty.PropertyName)
-            {
-                Content.RotationX = RotationX;
-                return;
-            }
-            if (propertyName == RotationYProperty.PropertyName)
-            {
-                Content.RotationY = RotationY;
-                return;
-            }
+                //System.Diagnostics.Debug.WriteLine ($"{this.GetType().FullName}.OnPropertyChanged property={propertyName}");
+                //if (propertyName == IsPresentedProperty.PropertyName) {
+                if (propertyName == TranslationXProperty.PropertyName)
+                {
+                    Content.TranslationX = TranslationX;
+                    return;
+                }
+                if (propertyName == TranslationYProperty.PropertyName)
+                {
+                    Content.TranslationY = TranslationY;
+                    return;
+                }
+                if (propertyName == RotationProperty.PropertyName)
+                {
+                    Content.Rotation = Rotation;
+                    return;
+                }
+                if (propertyName == RotationXProperty.PropertyName)
+                {
+                    Content.RotationX = RotationX;
+                    return;
+                }
+                if (propertyName == RotationYProperty.PropertyName)
+                {
+                    Content.RotationY = RotationY;
+                    return;
+                }
 
-            base.OnPropertyChanged(propertyName);
+                if (propertyName == ScaleProperty.PropertyName)
+                {
+                    Content.Scale = Scale;
+                    return;
+                }
+                base.OnPropertyChanged(propertyName);
+            });
         }
         #endregion
 
@@ -212,5 +219,6 @@ namespace Forms9Patch
         }
         #endregion
     }
+
 }
 

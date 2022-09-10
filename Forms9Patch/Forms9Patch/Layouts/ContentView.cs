@@ -1,14 +1,18 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 using Xamarin.Forms;
 using System;
+using P42.Utils;
+using System.ComponentModel;
 
 namespace Forms9Patch
 {
     /// <summary>
     /// Forms9Patch ContentView.  
     /// </summary>
-    public class ContentView : Xamarin.Forms.ContentView, ILayout
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
+    public class ContentView : Xamarin.Forms.ContentView, ILayout, IDisposable
     {
         #region Properties
 
@@ -16,7 +20,7 @@ namespace Forms9Patch
         /// <summary>
         /// Backing store key for Content
         /// </summary>
-        public static readonly new BindableProperty ContentProperty = BindableProperty.Create("Content", typeof(View), typeof(ContentView), null,
+        public static readonly new BindableProperty ContentProperty = BindableProperty.Create(nameof(Content), typeof(View), typeof(ContentView), null,
                                                                                             propertyChanging: (bindable, oldValue, newValue) =>
                                                                                             {
                                                                                                 if (oldValue is View element)
@@ -61,7 +65,7 @@ namespace Forms9Patch
         /// <summary>
         /// Backing store for the background image property.
         /// </summary>
-        public static readonly BindableProperty BackgroundImageProperty = BindableProperty.Create("BackgroundImage", typeof(Image), typeof(ContentView), null,
+        public static readonly BindableProperty BackgroundImageProperty = BindableProperty.Create(nameof(BackgroundImage), typeof(Image), typeof(ContentView), null,
                                                                                               propertyChanging: (bindable, oldValue, newValue) =>
                                                                                               {
                                                                                                   if (bindable is ContentView contentView && !(bindable is SegmentButton))
@@ -86,7 +90,7 @@ namespace Forms9Patch
         /// <summary>
         /// Backing store for the limit minimum size to background image size property.
         /// </summary>
-        public static readonly BindableProperty LimitMinSizeToBackgroundImageSizeProperty = BindableProperty.Create("LimitMinSizeToBackgroundImageSize", typeof(bool), typeof(ContentView), default(bool));
+        public static readonly BindableProperty LimitMinSizeToBackgroundImageSizeProperty = BindableProperty.Create(nameof(LimitMinSizeToBackgroundImageSize), typeof(bool), typeof(ContentView), default(bool));
         /// <summary>
         /// Gets or sets a value indicating whether this <see cref="T:Forms9Patch.ContentView"/> will limit its minimum size to
         /// background image size.
@@ -132,6 +136,22 @@ namespace Forms9Patch
             set => SetValue(HasShadowProperty, value);
         }
         #endregion HasShadow property
+
+        #region MakeRoomForShadow
+        /// <summary>
+        /// Backing store for ContentView.MakeRoomForShadow property
+        /// </summary>
+        internal static readonly BindableProperty InvisibleShadowProperty = BindableProperty.Create(nameof(InvisibleShadow), typeof(bool), typeof(ContentView), default);
+        /// <summary>
+        /// controls value of .MakeRoomForShadow property
+        /// </summary>
+        internal bool InvisibleShadow
+        {
+            get => (bool)GetValue(InvisibleShadowProperty);
+            set => SetValue(InvisibleShadowProperty, value);
+        }
+        #endregion
+
 
         #region ShadowInverted property
         /// <summary>
@@ -231,8 +251,8 @@ namespace Forms9Patch
         /// <value>The width of the boarder.</value>
         public float BorderWidth
         {
-            get => (float)GetValue(OutlineWidthProperty);
-            set => SetValue(OutlineWidthProperty, value);
+            get => (float)GetValue(BorderWidthProperty);
+            set => SetValue(BorderWidthProperty, value);
         }
         #endregion OutlineWidth property
 
@@ -310,7 +330,7 @@ namespace Forms9Patch
         #endregion
 
 
-        #region Constructors
+        #region Constructors / Disposer
         static ContentView()
         {
             Settings.ConfirmInitialization();
@@ -321,8 +341,46 @@ namespace Forms9Patch
         /// </summary>
         public ContentView()
         {
+            if (_baseInternalChildren is null)
+            {
+                _baseInternalChildren = (ObservableCollection<Element>)P42.Utils.ReflectionExtensions.GetPropertyValue(this, "InternalChildren");
+                if (!(this is SegmentButton))
+                    _baseInternalChildren?.Insert(0, CurrentBackgroundImage);
+            }
             _f9pId = _instances++;
         }
+
+        private bool _disposed;
+        /// <summary>
+        /// Dispose the layout and its contents
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed && disposing)
+            {
+                _disposed = true;
+
+                if (BackgroundImage is IDisposable backgroundImage)
+                    backgroundImage.Dispose();
+                BackgroundImage = null;
+                if (Content is IDisposable content)
+                    content.Dispose();
+
+                _fallbackBackgroundImage.Dispose();
+                Content = null;
+            }
+        }
+
+        /// <summary>
+        /// Disposed the layout and its contents
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
         #endregion
 
 
@@ -335,38 +393,45 @@ namespace Forms9Patch
         /// <param name="propertyName"></param>
         protected override void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
-            if (!P42.Utils.Environment.IsOnMainThread)
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
             {
-                Device.BeginInvokeOnMainThread(() => OnPropertyChanged(propertyName));
-                return;
-            }
+                // This is BEFORE base.OnPropertyChanged to assure that SegmentedControlBackground is not invoked before the BackgroundImage has been updated - an issue on UWP;
+                if (propertyName == BackgroundColorProperty.PropertyName)
+                    CurrentBackgroundImage.BackgroundColor = _fallbackBackgroundImage.BackgroundColor = BackgroundColor;
+                else if (propertyName == HasShadowProperty.PropertyName)
+                    CurrentBackgroundImage.HasShadow = _fallbackBackgroundImage.HasShadow = HasShadow;
+                else if (propertyName == InvisibleShadowProperty.PropertyName)
+                    CurrentBackgroundImage.InvisibleShadow = _fallbackBackgroundImage.InvisibleShadow = InvisibleShadow;
+                else if (propertyName == ShadowInvertedProperty.PropertyName)
+                    CurrentBackgroundImage.ShadowInverted = _fallbackBackgroundImage.ShadowInverted = ShadowInverted;
+                else if (propertyName == OutlineColorProperty.PropertyName)
+                    CurrentBackgroundImage.OutlineColor = _fallbackBackgroundImage.OutlineColor = OutlineColor;
+                if (propertyName == OutlineRadiusProperty.PropertyName)
+                    CurrentBackgroundImage.OutlineRadius = _fallbackBackgroundImage.OutlineRadius = OutlineRadius;
+                else if (propertyName == OutlineWidthProperty.PropertyName)
+                    CurrentBackgroundImage.OutlineWidth = _fallbackBackgroundImage.OutlineWidth = OutlineWidth;
+                else if (propertyName == ElementShapeProperty.PropertyName)
+                    CurrentBackgroundImage.ElementShape = _fallbackBackgroundImage.ElementShape = ElementShape;
+                //else if (propertyName == MarginProperty.PropertyName)
+                //    CurrentBackgroundImage.Margin = _fallbackBackgroundImage.Margin = Margin;
+                //this fixes a crash in ConnectionCalc.UWP when the [Calculated] button is updated
+                try
+                {
+                    base.OnPropertyChanged(propertyName);
+                }
+#pragma warning disable RECS0022 // A catch clause that catches System.Exception and has an empty body
+                catch (Exception) { }
+#pragma warning restore RECS0022 // A catch clause that catches System.Exception and has an empty body
 
-            // This is BEFORE base.OnPropertyChanged to assure that SegmentedControlBackground is not invoked before the BackgroundImage has been updated - an issue on UWP;
-            if (propertyName == BackgroundColorProperty.PropertyName)
-                CurrentBackgroundImage.BackgroundColor = _fallbackBackgroundImage.BackgroundColor = BackgroundColor;
-            else if (propertyName == HasShadowProperty.PropertyName)
-                CurrentBackgroundImage.HasShadow = _fallbackBackgroundImage.HasShadow = HasShadow;
-            else if (propertyName == ShadowInvertedProperty.PropertyName)
-                CurrentBackgroundImage.ShadowInverted = _fallbackBackgroundImage.ShadowInverted = ShadowInverted;
-            else if (propertyName == OutlineColorProperty.PropertyName)
-                CurrentBackgroundImage.OutlineColor = _fallbackBackgroundImage.OutlineColor = OutlineColor;
-            if (propertyName == OutlineRadiusProperty.PropertyName)
-                CurrentBackgroundImage.OutlineRadius = _fallbackBackgroundImage.OutlineRadius = OutlineRadius;
-            else if (propertyName == OutlineWidthProperty.PropertyName)
-                CurrentBackgroundImage.OutlineWidth = _fallbackBackgroundImage.OutlineWidth = OutlineWidth;
-            else if (propertyName == ElementShapeProperty.PropertyName)
-                CurrentBackgroundImage.ElementShape = _fallbackBackgroundImage.ElementShape = ElementShape;
-
-            base.OnPropertyChanged(propertyName);
-
-            if (propertyName == BackgroundColorProperty.PropertyName ||
-                propertyName == HasShadowProperty.PropertyName ||
-                propertyName == ShadowInvertedProperty.PropertyName ||
-                propertyName == OutlineColorProperty.PropertyName ||
-                propertyName == OutlineWidthProperty.PropertyName ||
-                propertyName == ElementShapeProperty.PropertyName)
-                //InvalidateMeasure(); //NOTE: InvalidateMeasure() will cause some Content to be layed out again but not others.  Test using SingleButton.cs in Forms9PatchDemo.  ForceLayout() works better.
-                ForceLayout();
+                if (propertyName == BackgroundColorProperty.PropertyName ||
+                    propertyName == HasShadowProperty.PropertyName ||
+                    propertyName == ShadowInvertedProperty.PropertyName ||
+                    propertyName == OutlineColorProperty.PropertyName ||
+                    propertyName == OutlineWidthProperty.PropertyName ||
+                    propertyName == ElementShapeProperty.PropertyName)
+                    //InvalidateMeasure(); //NOTE: InvalidateMeasure() will cause some Content to be layed out again but not others.  Test using SingleButton.cs in Forms9PatchDemo.  ForceLayout() works better.
+                    ForceLayout();
+            });
         }
         #endregion
 
@@ -434,8 +499,9 @@ namespace Forms9Patch
         {
 
             if (Content == null)
-                return new SizeRequest(Size.Zero, Size.Zero);
-
+            {
+                return new SizeRequest(new Size(50, 50), Size.Zero);
+            }
             //var condition = false;// (this is Forms9Patch.Button button && button.HtmlText == "cancel");
 
             //if (!HasShadow && (BackgroundImage == null || !LimitMinSizeToBackgroundImageSize))
@@ -446,26 +512,31 @@ namespace Forms9Patch
             if (double.IsInfinity(widthConstraint) || double.IsNaN(widthConstraint))
                 widthConstraint = Forms9Patch.Display.Width;
 
-            //System.Diagnostics.Debug.WriteLine("ContentView.OnSizeRequest(" + widthConstraint + ", " + heightConstraint + ")");
             //var result = base.OnSizeRequest(widthConstraint, heightConstraint);
             var availWidth = widthConstraint;
             var availHeight = heightConstraint;
             var shadowPadding = HasShadow ? ShapeBase.ShadowPadding(this) : new Thickness();
 
+            /*
 #pragma warning disable CS0618 // Type or member is obsolete
             var baseRequest = base.OnSizeRequest(availWidth, availHeight);
+            //System.Diagnostics.Debug.WriteLine("\t\t base.OnSizeRequest: " + baseRequest);
+
+            baseRequest = new SizeRequest(new Size(10, 10), new Size(5, 5));
+            //System.Diagnostics.Debug.WriteLine("\t\t base.OnSizeRequest: " + baseRequest);
 #pragma warning restore CS0618 // Type or member is obsolete
 
             availWidth -= (Margin.HorizontalThickness + Padding.HorizontalThickness + shadowPadding.HorizontalThickness);
             availHeight -= (Margin.VerticalThickness + Padding.VerticalThickness + shadowPadding.VerticalThickness);
 
             //if (condition)
-            //    System.Diagnostics.Debug.WriteLine(GetType() + ".OnSizeRequest widthConstraint=["+widthConstraint+"] heightConstraint=["+heightConstraint+"] availWidth=["+availWidth+"] availHeight=["+availHeight+"]");
+            //System.Diagnostics.Debug.WriteLine(GetType() + ".OnSizeRequest widthConstraint=[" + widthConstraint + "] heightConstraint=[" + heightConstraint + "] availWidth=[" + availWidth + "] availHeight=[" + availHeight + "]");
 
             var contentSizeRequest = Content.Measure(availWidth, availHeight, MeasureFlags.IncludeMargins);
 
             //if (condition)
-            //    System.Diagnostics.Debug.WriteLine(GetType() + ".OnSizeRequest Content.Measure=["+contentSizeRequest+"]");
+            //System.Diagnostics.Debug.WriteLine(GetType() + ".OnSizeRequest Content.Measure=[" + contentSizeRequest + "]");
+            //System.Diagnostics.Debug.WriteLine("\t\t Content: " + Content);
             //System.Diagnostics.Debug.WriteLine("\t\t contentSizeRequest: " + contentSizeRequest);
 
             // this causes Toast and some buttons to be too small
@@ -477,6 +548,7 @@ namespace Forms9Patch
             var minHeight = Math.Max(contentSizeRequest.Minimum.Height, baseRequest.Minimum.Height);
 
             var result = new SizeRequest(new Size(reqWidth, reqHeight), new Size(minWidth, minHeight));
+            //System.Diagnostics.Debug.WriteLine(" result=[" + result + "]");
 
             if (LimitMinSizeToBackgroundImageSize && BackgroundImage != null && BackgroundImage.SourceImageSize != Size.Zero)
             {
@@ -486,18 +558,44 @@ namespace Forms9Patch
                 var minH = Math.Max(result.Minimum.Height, BackgroundImage.SourceImageSize.Height) + BackgroundImage.Margin.VerticalThickness;
                 result = new SizeRequest(new Size(reqW, reqH), new Size(minW, minH));
             }
+            //System.Diagnostics.Debug.WriteLine(" result=[" + result + "]");
 
             contentSizeRequest = new SizeRequest(
-                new Size(result.Request.Width + (contentSizeRequest.Request.Width >= baseRequest.Request.Width ? Margin.HorizontalThickness + Padding.HorizontalThickness + shadowPadding.HorizontalThickness : 0),
-                         result.Request.Height + (contentSizeRequest.Request.Height >= baseRequest.Request.Height ? Margin.VerticalThickness + Padding.VerticalThickness + shadowPadding.VerticalThickness : 0)),
-                new Size(result.Minimum.Width + (contentSizeRequest.Minimum.Width >= baseRequest.Minimum.Width ? Margin.HorizontalThickness + Padding.HorizontalThickness + shadowPadding.HorizontalThickness : 0),
-                         result.Minimum.Height + (contentSizeRequest.Minimum.Height >= baseRequest.Minimum.Height ? Margin.VerticalThickness + Padding.VerticalThickness + shadowPadding.VerticalThickness : 0)));
+                new Size(result.Request.Width + (contentSizeRequest.Request.Width >= baseRequest.Request.Width
+                                                    ? shadowPadding.HorizontalThickness // + Margin.HorizontalThickness + Padding.HorizontalThickness
+                                                    : 0),
+                         result.Request.Height + (contentSizeRequest.Request.Height >= baseRequest.Request.Height
+                                                    ? shadowPadding.VerticalThickness // + Margin.VerticalThickness + Padding.VerticalThickness
+                                                    : 0)),
+                new Size(result.Minimum.Width + (contentSizeRequest.Minimum.Width >= baseRequest.Minimum.Width
+                                                    ? shadowPadding.HorizontalThickness// + Margin.HorizontalThickness + Padding.HorizontalThickness
+                                                    : 0),
+                         result.Minimum.Height + (contentSizeRequest.Minimum.Height >= baseRequest.Minimum.Height
+                                                    ? shadowPadding.VerticalThickness // + Margin.VerticalThickness + Padding.VerticalThickness 
+                                                    : 0)));
 
             //if (condition)
-            //    System.Diagnostics.Debug.WriteLine(GetType() + ".OnSizeRequest result=[" + contentSizeRequest + "]");
+            //System.Diagnostics.Debug.WriteLine(" result=[" + contentSizeRequest + "]");
+            //System.Diagnostics.Debug.WriteLine("ContentView" + P42.Utils.ReflectionExtensions.CallerString() + ": ============================================");
 
             //System.Diagnostics.Debug.WriteLine("ContentView.OnSizeRequest: result=" + contentSizeRequest);
             return contentSizeRequest;
+            */
+
+            availWidth -= (/*Margin.HorizontalThickness + Padding.HorizontalThickness + */shadowPadding.HorizontalThickness);
+            availHeight -= (/*Margin.VerticalThickness + Padding.VerticalThickness +*/ shadowPadding.VerticalThickness);
+            var result = Content.Measure(availWidth, availHeight, MeasureFlags.IncludeMargins);
+            if (LimitMinSizeToBackgroundImageSize && BackgroundImage != null && BackgroundImage.SourceImageSize != Size.Zero)
+            {
+                var reqW = Math.Max(result.Request.Width, BackgroundImage.SourceImageSize.Width) + BackgroundImage.Margin.HorizontalThickness;
+                var reqH = Math.Max(result.Request.Height, BackgroundImage.SourceImageSize.Height) + BackgroundImage.Margin.VerticalThickness;
+                var minW = Math.Max(result.Minimum.Width, BackgroundImage.SourceImageSize.Width) + BackgroundImage.Margin.HorizontalThickness;
+                var minH = Math.Max(result.Minimum.Height, BackgroundImage.SourceImageSize.Height) + BackgroundImage.Margin.VerticalThickness;
+                result = new SizeRequest(new Size(reqW, reqH), new Size(minW, minH));
+            }
+            result = new SizeRequest(new Size(result.Request.Width + shadowPadding.HorizontalThickness, result.Request.Height + shadowPadding.VerticalThickness),
+                                     new Size(result.Minimum.Width + shadowPadding.HorizontalThickness, result.Minimum.Height + shadowPadding.VerticalThickness));
+            return result;
         }
 
         /// <summary>
@@ -511,18 +609,19 @@ namespace Forms9Patch
         {
             if (!(this is SegmentButton))
                 LayoutChildIntoBoundingRegion(CurrentBackgroundImage, new Rectangle(0, 0, Width, Height));
-
-            var rect = new Rectangle(x, y, width, height);
-            if (HasShadow)
+            if (Content != null)
             {
-                var shadowPadding = ShapeBase.ShadowPadding(this);
-                rect.X += shadowPadding.Left;
-                rect.Y += shadowPadding.Top;
-                rect.Width -= shadowPadding.HorizontalThickness;
-                rect.Height -= shadowPadding.VerticalThickness;
+                var rect = new Rectangle(x, y, width, height);
+                if (HasShadow)
+                {
+                    var shadowPadding = ShapeBase.ShadowPadding(this);
+                    rect.X += shadowPadding.Left;
+                    rect.Y += shadowPadding.Top;
+                    rect.Width -= shadowPadding.HorizontalThickness;
+                    rect.Height -= shadowPadding.VerticalThickness;
+                }
+                LayoutChildIntoBoundingRegion(Content, rect);
             }
-
-            LayoutChildIntoBoundingRegion(Content, rect);
         }
 
 

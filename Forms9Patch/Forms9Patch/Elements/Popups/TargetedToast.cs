@@ -1,11 +1,14 @@
 ﻿using Xamarin.Forms;
 using System;
+using System.ComponentModel;
 
 namespace Forms9Patch
 {
     /// <summary>
     /// A simple toast that points to an element
     /// </summary>
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     public class TargetedToast : BubblePopup
     {
         #region Factory
@@ -17,9 +20,9 @@ namespace Forms9Patch
         /// <param name="text"></param>
         /// <param name="popAfter"></param>
         /// <returns></returns>
-        public static TargetedToast Create(VisualElement target, string title, string text, TimeSpan popAfter = default)
-            => new TargetedToast(target) { Title = title, Text = text, PopAfter = popAfter, IsVisible = true };
-        
+        public static TargetedToast Create(VisualElement target, string title, string text, TimeSpan popAfter = default, FeedbackEffect pushedFeedback = FeedbackEffect.Info)
+            => new TargetedToast(target) { Title = title, Text = text, PopAfter = popAfter, PushedFeedback = pushedFeedback, IsVisible = true };
+
         #endregion
 
 
@@ -125,7 +128,10 @@ namespace Forms9Patch
             TextColor = Color.Black
         };
 #pragma warning disable CC0033 // Dispose Fields Properly
-        readonly Button _okButton = new Button();
+        readonly Button _okButton = new Button
+        {
+            AutomationId = nameof(_okButton)
+        };
 #pragma warning restore CC0033 // Dispose Fields Properly
         #endregion
 
@@ -166,6 +172,7 @@ namespace Forms9Patch
             if (!_disposed && disposing)
             {
                 _disposed = true;
+                _okButton.Tapped -= OnOkButtonTappedAsync;
                 _okButton.Dispose();
             }
             base.Dispose(disposing);
@@ -186,35 +193,32 @@ namespace Forms9Patch
         /// <param name="propertyName">Property name.</param>
         protected override void OnPropertyChanged(string propertyName = null)
         {
-            if (!P42.Utils.Environment.IsOnMainThread)
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
             {
-                Device.BeginInvokeOnMainThread(() => OnPropertyChanged(propertyName));
-                return;
-            }
+                base.OnPropertyChanged(propertyName);
 
-            base.OnPropertyChanged(propertyName);
-
-            if (propertyName == TitleProperty.PropertyName)
-                _titleLabel.HtmlText = Title;
-            else if (propertyName == TextProperty.PropertyName)
-                _textLabel.HtmlText = Text;
-            else if (propertyName == OkTextProperty.PropertyName)
-            {
-                _okButton.HtmlText = OkText;
-                if (!string.IsNullOrWhiteSpace(_okButton.HtmlText) && !((StackLayout)Content).Children.Contains(_okButton))
-                    ((StackLayout)Content).Children.Add(_okButton);
-                else if (string.IsNullOrWhiteSpace(_okButton.HtmlText) && ((StackLayout)Content).Children.Contains(_okButton))
-                    ((StackLayout)Content).Children.Remove(_okButton);
-            }
-            else if (propertyName == OkButtonColorProperty.PropertyName)
-                _okButton.BackgroundColor = OkButtonColor;
-            else if (propertyName == OkTextColorProperty.PropertyName)
-                _okButton.TextColor = OkTextColor;
-            else if (propertyName == TextColorProperty.PropertyName)
-            {
-                _titleLabel.TextColor = TextColor;
-                _textLabel.TextColor = TextColor;
-            }
+                if (propertyName == TitleProperty.PropertyName)
+                    _titleLabel.HtmlText = Title;
+                else if (propertyName == TextProperty.PropertyName)
+                    _textLabel.HtmlText = Text;
+                else if (propertyName == OkTextProperty.PropertyName)
+                {
+                    _okButton.HtmlText = OkText;
+                    if (!string.IsNullOrWhiteSpace(_okButton.HtmlText) && !((StackLayout)Content).Children.Contains(_okButton))
+                        ((StackLayout)Content).Children.Add(_okButton);
+                    else if (string.IsNullOrWhiteSpace(_okButton.HtmlText) && ((StackLayout)Content).Children.Contains(_okButton))
+                        ((StackLayout)Content).Children.Remove(_okButton);
+                }
+                else if (propertyName == OkButtonColorProperty.PropertyName)
+                    _okButton.BackgroundColor = OkButtonColor;
+                else if (propertyName == OkTextColorProperty.PropertyName)
+                    _okButton.TextColor = OkTextColor;
+                else if (propertyName == TextColorProperty.PropertyName)
+                {
+                    _titleLabel.TextColor = TextColor;
+                    _textLabel.TextColor = TextColor;
+                }
+            });
         }
         #endregion
     }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using Xamarin.Forms;
 
 namespace Forms9Patch
@@ -6,6 +7,8 @@ namespace Forms9Patch
     /// <summary>
     /// Describes a Swipe action button that appears when a cell is swiped 
     /// </summary>
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     public class SwipeMenuItem : BindableObject, IMenuItem
     {
         #region Properties
@@ -56,6 +59,37 @@ namespace Forms9Patch
             set => SetValue(IconTextProperty, value);
         }
         #endregion IconText property
+
+        #region IconFontFamily
+        /// <summary>
+        /// Backing store for SwipeMenuItem IconFontFamily property
+        /// </summary>
+        public static readonly BindableProperty IconFontFamilyProperty = BindableProperty.Create(nameof(IconFontFamily), typeof(string), typeof(SwipeMenuItem), default);
+        /// <summary>
+        /// controls value of .IconFontFamily property
+        /// </summary>
+        public string IconFontFamily
+        {
+            get => (string)GetValue(IconFontFamilyProperty);
+            set => SetValue(IconFontFamilyProperty, value);
+        }
+        #endregion
+
+        #region IconFontSize
+        /// <summary>
+        /// Backing store for SwipeMenuItem IconFontSize property
+        /// </summary>
+        public static readonly BindableProperty IconFontSizeProperty = BindableProperty.Create(nameof(IconFontSize), typeof(double), typeof(SwipeMenuItem), -1.0);
+        /// <summary>
+        /// controls value of .IconFontSize property
+        /// </summary>
+        public double IconFontSize
+        {
+            get => (double)GetValue(IconFontSizeProperty);
+            set => SetValue(IconFontSizeProperty, value);
+        }
+        #endregion
+
 
         #region Text property
         /// <summary>
@@ -163,22 +197,24 @@ namespace Forms9Patch
         /// <param name="propertyName">Property name.</param>
         protected override void OnPropertyChanged(string propertyName = null)
         {
-            if (!P42.Utils.Environment.IsOnMainThread)
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
             {
-                Device.BeginInvokeOnMainThread(() => OnPropertyChanged(propertyName));
-                return;
-            }
 
-            base.OnPropertyChanged(propertyName);
+                try
+                {
+                    base.OnPropertyChanged(propertyName);
+                }
+                catch (Exception) { }
 
-            if (propertyName == IconTextProperty.PropertyName && IconTextProperty != null)
-                IconImage = null;
-            else if (propertyName == IconImageProperty.PropertyName && IconImage?.Source != null)
-                IconText = null;
-            else if (propertyName == TextProperty.PropertyName && Text != null)
-                HtmlText = null;
-            else if (propertyName == HtmlTextProperty.PropertyName && HtmlText != null)
-                Text = null;
+                if (propertyName == IconTextProperty.PropertyName && IconTextProperty != null)
+                    IconImage = null;
+                else if (propertyName == IconImageProperty.PropertyName && IconImage?.Source != null)
+                    IconText = null;
+                else if (propertyName == TextProperty.PropertyName && Text != null)
+                    HtmlText = null;
+                else if (propertyName == HtmlTextProperty.PropertyName && HtmlText != null)
+                    Text = null;
+            });
         }
         #endregion
     }

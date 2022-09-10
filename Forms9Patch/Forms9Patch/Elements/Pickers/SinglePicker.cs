@@ -1,155 +1,61 @@
 ﻿using System.Collections;
 using Xamarin.Forms;
+using System.ComponentModel;
+using P42.Utils;
 using System;
+using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace Forms9Patch
 {
     /// <summary>
     /// Single picker.
     /// </summary>
-    public class SinglePicker : Grid
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
+    public class SinglePicker : BasePicker
     {
-        #region Properties
+        #region IsHtmlText
         /// <summary>
-        /// The item templates property.
+        /// Backing store for SinglePicker's IsHtmlText property
         /// </summary>
-        public static readonly BindableProperty ItemTemplatesProperty = BindableProperty.Create(nameof(ItemTemplates), typeof(DataTemplateSelector), typeof(SinglePicker), null);
+        public static readonly BindableProperty IsHtmlTextProperty = BindableProperty.Create(nameof(IsHtmlText), typeof(bool), typeof(SinglePicker), default);
         /// <summary>
-        /// Gets the item templates.
+        /// controls value of .IsHtmlText property
         /// </summary>
-        /// <value>The item templates.</value>
-        public DataTemplateSelector ItemTemplates
+        public bool IsHtmlText
         {
-            get => (DataTemplateSelector)GetValue(ItemTemplatesProperty);
-            private set => SetValue(ItemTemplatesProperty, value);
+            get => (bool)GetValue(IsHtmlTextProperty);
+            set => SetValue(IsHtmlTextProperty, value);
         }
-
-        /// <summary>
-        /// The items source property.
-        /// </summary>
-        public static readonly BindableProperty ItemsSourceProperty = BindableProperty.Create(nameof(ItemsSource), typeof(IList), typeof(SinglePicker), null);
-        /// <summary>
-        /// Gets or sets the items source.
-        /// </summary>
-        /// <value>The items source.</value>
-        public IList ItemsSource
-        {
-            get => (IList)GetValue(ItemsSourceProperty);
-            set => SetValue(ItemsSourceProperty, value);
-        }
-
-        /// <summary>
-        /// The row height property.
-        /// </summary>
-        public static readonly BindableProperty RowHeightProperty = BindableProperty.Create(nameof(RowHeight), typeof(int), typeof(SinglePicker), 30);
-        /// <summary>
-        /// Gets or sets the height of the row.
-        /// </summary>
-        /// <value>The height of the row.</value>
-        public int RowHeight
-        {
-            get => (int)GetValue(RowHeightProperty);
-            set => SetValue(RowHeightProperty, value);
-        }
-
-        /// <summary>
-        /// The index property.
-        /// </summary>
-        public static readonly BindableProperty IndexProperty = BindableProperty.Create(nameof(Index), typeof(int), typeof(SinglePicker), 0);
-        /// <summary>
-        /// Gets or sets the index.
-        /// </summary>
-        /// <value>The index.</value>
-        public int Index
-        {
-            get => (int)GetValue(IndexProperty);
-            set => SetValue(IndexProperty, value);
-        }
-
-        /// <summary>
-        /// The selected item property.
-        /// </summary>
-        public static readonly BindableProperty SelectedItemProperty = BindableProperty.Create(nameof(SelectedItem), typeof(object), typeof(SinglePicker), null);
-        /// <summary>
-        /// Gets or sets the selected item.
-        /// </summary>
-        /// <value>The selected item.</value>
-        public object SelectedItem
-        {
-            get => GetValue(SelectedItemProperty);
-            set => SetValue(SelectedItemProperty, value);
-        }
-
         #endregion
 
         #region Fields
-        readonly internal BasePicker _basePicker = new BasePicker
-        {
-            BackgroundColor = Color.Transparent
-        };
-
-        readonly internal Color _overlayColor = Color.FromRgb(0.85, 0.85, 0.85);
-
-        readonly internal ColorGradientBox _upperGradient = new ColorGradientBox
-        {
-            Orientation = StackOrientation.Vertical
-        };
-
-        readonly internal ColorGradientBox _lowerGradient = new ColorGradientBox
-        {
-            Orientation = StackOrientation.Vertical
-        };
-
-        readonly internal BoxView _upperEdge = new BoxView
-        {
-            BackgroundColor = Color.Gray,
-            HeightRequest = 1,
-            VerticalOptions = LayoutOptions.End,
-        };
-        readonly internal BoxView _lowerEdge = new BoxView
-        {
-            BackgroundColor = Color.Gray,
-            HeightRequest = 1,
-            VerticalOptions = LayoutOptions.Start,
-        };
-
+        /// <summary>
+        /// Internal use
+        /// </summary>
+        internal protected Type PlainTextCellType = typeof(SinglePickerCellContentView);
+        /// <summary>
+        /// Internal Use
+        /// </summary>
+        internal protected Type HtmlTextCellType = typeof(SinglePickerHtmlCellContentView);
         #endregion
+
+
+        static SinglePicker()
+        {
+
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="T:Forms9Patch.SinglePicker"/> class.
         /// </summary>
         public SinglePicker()
         {
-            RowDefinitions = new RowDefinitionCollection
-            {
-                new RowDefinition{ Height = GridLength.Star },
-                new RowDefinition{ Height = RowHeight },
-                new RowDefinition{ Height = GridLength.Star }
-            };
+            ItemTemplates.Clear();
+            ItemTemplates.Add(typeof(string), PlainTextCellType);
 
-            Padding = new Thickness(0, 0, 0, 0);
-
-            _basePicker._listView.SelectedCellBackgroundColor = Color.Transparent;
-
-            _upperGradient.StartColor = _overlayColor;
-            _upperGradient.EndColor = _overlayColor.WithAlpha(0.5);
-            _lowerGradient.StartColor = _overlayColor.WithAlpha(0.5);
-            _lowerGradient.EndColor = _overlayColor;
-
-            Children.Add(_upperEdge);
-            Children.Add(_lowerEdge, 0, 2);
-            Children.Add(_basePicker);
-            Grid.SetRowSpan(_basePicker, 3);
-            Children.Add(_upperGradient);
-            Children.Add(_lowerGradient, 0, 2);
-
-            _basePicker.SelectBy = SelectBy.Position;
-
-            _basePicker.RowHeight = RowHeight;
-
-            VerticalOptions = LayoutOptions.FillAndExpand;
-
-            _basePicker.PropertyChanged += BasePickerPropertyChanged;
+            VerticalOptions = LayoutOptions.Fill;
         }
 
         #region change management
@@ -159,25 +65,22 @@ namespace Forms9Patch
         /// <param name="propertyName">Property name.</param>
         protected override void OnPropertyChanged(string propertyName = null)
         {
-            if (!P42.Utils.Environment.IsOnMainThread)
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
             {
-                Device.BeginInvokeOnMainThread(() => OnPropertyChanged(propertyName));
-                return;
-            }
+                base.OnPropertyChanged(propertyName);
 
-            base.OnPropertyChanged(propertyName);
-
-            if (propertyName == RowHeightProperty.PropertyName)
-            {
-                _basePicker.RowHeight = RowHeight;
-                RowDefinitions[1].Height = RowHeight;
-            }
-            else if (propertyName == ItemsSourceProperty.PropertyName)
-                _basePicker.ItemsSource = ItemsSource;
-            else if (propertyName == IndexProperty.PropertyName)
-                _basePicker.Index = Index;
-            else if (propertyName == SelectedItemProperty.PropertyName)
-                _basePicker.SelectedItem = SelectedItem;
+                if (propertyName == IsHtmlTextProperty.PropertyName)
+                {
+                    var itemsSource = ItemsSource;
+                    ItemsSource = null;
+                    ItemTemplates.Clear();
+                    var template = IsHtmlText
+                        ? HtmlTextCellType
+                        : PlainTextCellType;
+                    ItemTemplates.Add(typeof(string), template);
+                    ItemsSource = itemsSource;
+                }
+            });
         }
         #endregion
 
@@ -189,32 +92,228 @@ namespace Forms9Patch
             SelectedItem = null;
         }
 
-        void BasePickerPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+
+        #region Cell Template
+        /// <summary>
+        /// Contents of a SinglePicker HTML cell
+        /// </summary>
+        [Xamarin.Forms.Internals.Preserve(AllMembers = true)]
+        protected class SinglePickerHtmlCellContentView : SinglePickerCellContentView
         {
-            if (e.PropertyName == BasePicker.SelectedItemProperty.PropertyName)
+            /// <summary>
+            /// Constructor for a SinglePicker HTML cell
+            /// </summary>
+            public SinglePickerHtmlCellContentView()
             {
-                SelectedItem = _basePicker.SelectedItem;
-                if (ItemsSource != null && ItemsSource.Count > 0)
-                {
-                    for (int i = 0; i < ItemsSource.Count; i++)
-                    {
-                        if (ItemsSource[i].Equals(SelectedItem))
-                        {
-                            Index = i;
-                            break;
-                        }
-                    }
-                    //_basePicker.SelectedItem = null;
-                    //_basePicker._listView.SelectedItem = null;
-                }
-            }
-            else if (e.PropertyName == BasePicker.IndexProperty.PropertyName)
-            {
-                Index = _basePicker.Index;
-                if (ItemsSource != null && ItemsSource.Count > Index)
-                    SelectedItem = ItemsSource[Index];
+                itemLabel.TextType = TextType.Html;
             }
 
+            /// <summary>
+            /// Same as it ever was
+            /// </summary>
+            protected override void OnBindingContextChanged()
+            {
+                Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    base.OnBindingContextChanged();
+
+                    if (BindingContext is IHtmlString htmlObject)
+                        itemLabel.HtmlText = htmlObject.ToHtml();
+                    else if (BindingContext != null)
+                        itemLabel.HtmlText = BindingContext?.ToString();
+                    else
+                        itemLabel.HtmlText = itemLabel.Text = null;
+                });
+            }
         }
+
+        /// <summary>
+        /// Contents of a SinglePicker Cell
+        /// </summary>
+        [Xamarin.Forms.Internals.Preserve(AllMembers = true)]
+        protected class SinglePickerCellContentView : ViewCell, IDisposable // Xamarin.Forms.Grid, IDisposable
+        {
+            #region Properties
+            /// <summary>
+            /// Backing store key for IsSelected property
+            /// </summary>
+            public static readonly BindableProperty IsSelectedProperty = BindableProperty.Create(nameof(IsSelected), typeof(bool), typeof(SinglePickerCellContentView), default(bool));
+            /// <summary>
+            /// Is this cell selected?
+            /// </summary>
+            public bool IsSelected
+            {
+                get => (bool)GetValue(IsSelectedProperty);
+                set => SetValue(IsSelectedProperty, value);
+            }
+
+            #endregion
+
+
+            #region Fields
+            /// <summary>
+            /// For internal use
+            /// </summary>
+            protected readonly Forms9Patch.Label itemLabel = new Forms9Patch.Label
+            {
+                TextColor = Color.Black,
+                VerticalTextAlignment = TextAlignment.Center,
+                HorizontalTextAlignment = TextAlignment.Start,
+                TextType = TextType.Text
+            };
+
+            protected readonly Grid grid = new Grid
+            {
+                Padding = new Thickness(5, 1, 5, 1),
+                ColumnDefinitions = new ColumnDefinitionCollection
+                {
+                    new ColumnDefinition { Width = new GridLength(0, GridUnitType.Absolute)},
+                    new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star)}
+                },
+                ColumnSpacing = 0
+            };
+
+            #endregion
+
+
+            #region Constructors
+            /// <summary>
+            /// Constructs a Forms9Patch.SinglePickerCellContentView
+            /// </summary>
+            public SinglePickerCellContentView()
+            {
+
+                var cellHeight = 40; // (int)BasePicker.RowHeightProperty.DefaultValue;
+                grid.RowDefinitions = new RowDefinitionCollection
+                {
+                    new RowDefinition { Height = new GridLength(cellHeight - grid.Padding.VerticalThickness, GridUnitType.Absolute)}
+                };
+
+                grid.Children.Add(itemLabel, 1, 0);
+
+                View = grid;
+            }
+
+            private bool _disposed;
+            /// <summary>
+            /// Same as it ever was
+            /// </summary>
+            protected virtual void Dispose(bool disposing)
+            {
+                if (!_disposed && disposing)
+                {
+                    _disposed = true;
+                    if (Parent is CollectionView collectionView)
+                    {
+                        collectionView.SelectionChanged -= CollectionView_SelectionChanged;
+                    }
+
+                }
+            }
+
+            /// <summary>
+            /// Same as it ever was
+            /// </summary>
+            public void Dispose()
+            {
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
+            #endregion
+
+
+            #region Change management
+            /// <summary>
+            /// Same as it ever was
+            /// </summary>
+            protected override void OnPropertyChanging([CallerMemberName] string propertyName = null)
+            {
+                base.OnPropertyChanging(propertyName);
+                if (propertyName == BindingContextProperty.PropertyName)
+                {
+                    UpdateSelected();
+                }
+                else if (propertyName == "Parent")
+                {
+                    UpdateSelected();
+                    if (Parent is CollectionView collectionView)
+                    {
+                        collectionView.SelectionChanged -= CollectionView_SelectionChanged;
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Same as it ever was
+            /// </summary>
+            protected override void OnBindingContextChanged()
+            {
+                Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
+                {
+
+                    base.OnBindingContextChanged();
+                    if (BindingContext != null)
+                        itemLabel.Text = BindingContext.ToString();
+                    else
+                        itemLabel.Text = null;
+                    UpdateSelected();
+                });
+            }
+
+            /// <summary>
+            /// Same as it ever was
+            /// </summary>
+            /// <param name="propertyName"></param>
+            protected override void OnPropertyChanged([CallerMemberName] string propertyName = null)
+            {
+                base.OnPropertyChanged(propertyName);
+                if (propertyName == "Parent")
+                {
+                    UpdateSelected();
+                    if (Parent is CollectionView collectionView)
+                    {
+                        collectionView.SelectionChanged += CollectionView_SelectionChanged;
+                    }
+                }
+            }
+
+            private void CollectionView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+            {
+                UpdateSelected();
+            }
+
+            void UpdateSelected()
+            {
+                if (BindingContext != null && Parent is CollectionView collectionView)
+                {
+                    if ((collectionView.SelectedItem?.Equals(BindingContext) ?? false) || (collectionView.SelectedItems?.Contains(BindingContext) ?? false))
+                    {
+                        // the below works for iOS but ACTUALLY DOES THE OPOSITE for Android.  Once again, Android.
+                        //VisualStateManager.GoToState(this, VisualStateManager.CommonStates.Selected);
+
+
+                        // to address the Android fail
+                        grid.BackgroundColor = Color.LightGray;
+
+                        /* or, if you want to burn some mips
+                        if (VisualStateManager.GetVisualStateGroups(this).FirstOrDefault(g=>g.Name == "CommonStates") is VisualStateGroup commonStates)
+                        {
+                            if (commonStates.States.FirstOrDefault(s=>s.Name == VisualStateManager.CommonStates.Selected && s.TargetType == GetType()) is VisualState selectedState)
+                            {
+                                if (selectedState.Setters.FirstOrDefault(t => t.Property == BackgroundColorProperty) is Setter backgroundSetter)
+                                    BackgroundColor = (Color)backgroundSetter.Value;
+                            }
+                        }
+                        */
+
+                    }
+                    else
+                        grid.BackgroundColor = Color.Transparent;
+                }
+            }
+            #endregion
+        }
+        #endregion
     }
+
 }

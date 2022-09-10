@@ -1,38 +1,20 @@
-using System;
-using Xamarin.Forms;
+﻿using System;
 using System.ComponentModel;
-using FormsGestures;
+using Xamarin.Forms;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections;
-using System.Linq;
 
 namespace Forms9Patch
 {
     /// <summary>
     /// FormsDragNDropListView List view.
     /// </summary>
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     public class ListView : Forms9Patch.Frame, IElement //  Forms9Patch.ManualLayout, IElement
     {
         #region Properties
-
-        #region Obsolete properties
-        /// <summary>
-        /// There is nothing to see here.  Move on.
-        /// </summary>
-        [Obsolete("Invalid property", true)]
-        public static new readonly BindableProperty ContentProperty = BindableProperty.Create(nameof(Content), typeof(View), typeof(ListView), default(View));
-        /// <summary>
-        /// There is nothing to see here.  Move on.
-        /// </summary>
-        /// <value>The content.</value>
-        [Obsolete("Invalid property", true)]
-        public new View Content
-        {
-            get => (View)GetValue(ContentProperty);
-            set => SetValue(ContentProperty, value);
-        }
-        #endregion
 
         #region Forms9Patch Cell Decoration properties
 
@@ -170,6 +152,7 @@ namespace Forms9Patch
         #endregion
 
         #region Data mapping and filtering properties
+        /*
 
         #region SourcePropertyMap
         /// <summary>
@@ -218,7 +201,7 @@ namespace Forms9Patch
             set => SetValue(SubGroupTypeProperty, value);
         }
         #endregion
-
+        */
         #endregion
 
         #region Row Selection properties
@@ -487,18 +470,6 @@ namespace Forms9Patch
         public event EventHandler<ItemVisibilityEventArgs> ItemDisappearing;
         #endregion
 
-        /*
-        #region Gestures
-        /// <summary>
-        /// Occurs when the panning has completed.
-        /// </summary>
-        public event EventHandler Panning;
-        /// <summary>
-        /// Occurs when the listview is panned.
-        /// </summary>
-        public event EventHandler Panned;
-        #endregion
-        */
 
         #region Scroll
         /// <summary>
@@ -515,7 +486,7 @@ namespace Forms9Patch
 
 
         #region Private Properties
-
+        /*
         ModalPopup _popup;
         ModalPopup Popup
         {
@@ -530,6 +501,7 @@ namespace Forms9Patch
                 return _popup;
             }
         }
+        */
 
         internal GroupWrapper BaseItemsSource { get; set; }
         #endregion
@@ -541,11 +513,11 @@ namespace Forms9Patch
         //readonly Listener _listener;
         bool _resetScrollToSelected;
         DateTime _scrollResetAt;
-        DateTime _scrollCompletedAt = DateTime.MinValue;
+        DateTime _scrollCompletedAt = DateTime.MinValue.AddYears(1);
         #endregion
 
 
-        #region Constructor
+        #region Constructor / Disposer
         static ListView()
         {
             Settings.ConfirmInitialization();
@@ -566,10 +538,6 @@ namespace Forms9Patch
             _listView.Scrolling += OnScrolling;
             _listView.Scrolled += OnScrolled;
 
-            //_listener = FormsGestures.Listener.For(this);
-
-            //_listener.Panning += OnPanning;
-            //_listener.Panned += OnPanned;
 
             SelectedItems = new ObservableCollection<object>();
             SelectedItems.CollectionChanged += SelectedItemsCollectionChanged;
@@ -603,6 +571,53 @@ namespace Forms9Patch
             Init();
         }
 
+
+        private bool _disposed;
+
+        /// <summary>
+        /// Dispose this ListView and its children
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    ItemSelected = null;
+                    ItemTapped = null;
+                    ItemsSourceSet = null;
+                    Appeared = null;
+                    ItemAppearing = null;
+                    ItemDisappearing = null;
+                    Scrolling = null;
+                    Scrolled = null;
+
+                    SwipeMenuItemTapped = null;
+                    ItemPropertyChanging = null;
+                    ItemPropertyChanged = null;
+
+                    _listView.ItemAppearing -= OnItemAppearing;
+                    _listView.ItemDisappearing -= OnItemDisappearing;
+
+                    _listView.Scrolling -= OnScrolling;
+                    _listView.Scrolled -= OnScrolled;
+
+                    SelectedItems.CollectionChanged -= SelectedItemsCollectionChanged;
+                    SelectedItems = null;
+
+                    ItemsSource = null; // this removes the group wrapper events;
+                    //ItemTemplates = null;  causes crash and is not necessary
+                    //VisibilityTest = null;
+
+                    _listView.Dispose();
+                }
+                _disposed = true;
+            }
+            base.Dispose(disposing);
+        }
+
+
         #endregion
 
 
@@ -629,19 +644,13 @@ namespace Forms9Patch
         /// <param name="propertyName">Property name.</param>
         protected override void OnPropertyChanging(string propertyName = null)
         {
-            if (!P42.Utils.Environment.IsOnMainThread)
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
             {
-                Device.BeginInvokeOnMainThread(() => OnPropertyChanging(propertyName));
-                return;
-            }
+                base.OnPropertyChanging(propertyName);
 
-            base.OnPropertyChanging(propertyName);
-
-
-            if (propertyName == SelectedItemProperty.PropertyName && GroupToggleBehavior == GroupToggleBehavior.Radio)
-            {
-                RemoveSelectedItem(SelectedItem);
-            }
+                if (propertyName == SelectedItemProperty.PropertyName && GroupToggleBehavior == GroupToggleBehavior.Radio)
+                    RemoveSelectedItem(SelectedItem);
+            });
         }
 
 
@@ -651,116 +660,115 @@ namespace Forms9Patch
         /// <param name="propertyName">Property name.</param>
         protected override void OnPropertyChanged(string propertyName = null)
         {
-            if (!P42.Utils.Environment.IsOnMainThread)
-            {
-                Device.BeginInvokeOnMainThread(() => OnPropertyChanged(propertyName));
-                return;
-            }
-
-            base.OnPropertyChanged(propertyName);
-
-            if (propertyName == "Renderer")
-            {
-                _resetScrollToSelected = true;
-                _scrollResetAt = DateTime.Now;
-            }
-
-            if (BaseItemsSource != null)
-            {
-                #region Cell decoration
-                // going to use Transparent
-                //if (propertyName == CellBackgroundColorProperty.PropertyName)
-                //    BaseItemsSource.CellBackgroundColor = CellBackgroundColor;
-                //else 
-                if (propertyName == SelectedCellBackgroundColorProperty.PropertyName)
-                    BaseItemsSource.SelectedCellBackgroundColor = SelectedCellBackgroundColor;
-                else if (propertyName == GroupHeaderRowHeightProperty.PropertyName)
-                    BaseItemsSource.RequestedGroupHeaderRowHeight = GroupHeaderRowHeight;
-                else if (propertyName == RowHeightProperty.PropertyName)
-                    // note that _listView.RowHeight is set in the below _listView!=null section
-                    BaseItemsSource.RequestedRowHeight = RowHeight;
-                #endregion
-
-                #region Data mapping and filtering
-                else if (propertyName == SourcePropertyMapProperty.PropertyName || propertyName == VisibilityTestProperty.PropertyName || propertyName == SubGroupTypeProperty.PropertyName)
-                    UpdateBaseItemsSource();
-                #endregion
-
-                #region Row selection properties
-                else if (propertyName == SelectedItemProperty.PropertyName && GroupToggleBehavior != GroupToggleBehavior.None)
-                    AddSelectedItem(SelectedItem);
-                // SelectedItems cannot be changed
-                #endregion
-
-
-                #region Separator Properties
-                else if (propertyName == SeparatorVisibilityProperty.PropertyName)
-                    BaseItemsSource.SeparatorVisibility = SeparatorVisibility;
-                else if (propertyName == SeparatorLeftIndentProperty.PropertyName)
-                    BaseItemsSource.SeparatorLeftIndent = SeparatorLeftIndent;
-                else if (propertyName == SeparatorRightIndentProperty.PropertyName)
-                    BaseItemsSource.SeparatorRightIndent = SeparatorRightIndent;
-                else if (propertyName == SeparatorHeightProperty.PropertyName)
-                    BaseItemsSource.RequestedSeparatorHeight = SeparatorHeight;
-                else if (propertyName == SeparatorColorProperty.PropertyName)
-                    BaseItemsSource.SeparatorColor = SeparatorColor;
-                #endregion
-            }
-
-            // Drag/Drop properties (Editable) are managed privately 
-
-            if (_listView != null)
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
             {
 
-                #region Xamarin.Forms.ListView analogs
+                base.OnPropertyChanged(propertyName);
 
-                #region Header / Footer properties
-                if (propertyName == HeaderProperty.PropertyName)
-                    _listView.Header = Header;
-                else if (propertyName == HeaderTemplateProperty.PropertyName)
-                    _listView.HeaderTemplate = HeaderTemplate;
-                else if (propertyName == FooterProperty.PropertyName)
-                    _listView.Footer = Footer;
-                else if (propertyName == FooterTemplateProperty.PropertyName)
-                    _listView.FooterTemplate = FooterTemplate;
-                #endregion
+                if (propertyName == "Renderer")
+                {
+                    _resetScrollToSelected = true;
+                    _scrollResetAt = DateTime.Now;
+                }
 
-                // SelectedItem handled above in BaseItemsSource!=null section
+                if (BaseItemsSource != null)
+                {
+                    #region Cell decoration
+                    // going to use Transparent
+                    //if (propertyName == CellBackgroundColorProperty.PropertyName)
+                    //    BaseItemsSource.CellBackgroundColor = CellBackgroundColor;
+                    //else 
+                    if (propertyName == SelectedCellBackgroundColorProperty.PropertyName)
+                        BaseItemsSource.SelectedCellBackgroundColor = SelectedCellBackgroundColor;
+                    else if (propertyName == GroupHeaderRowHeightProperty.PropertyName)
+                        BaseItemsSource.RequestedGroupHeaderRowHeight = GroupHeaderRowHeight;
+                    else if (propertyName == RowHeightProperty.PropertyName)
+                        // note that _listView.RowHeight is set in the below _listView!=null section
+                        BaseItemsSource.RequestedRowHeight = RowHeight;
+                    #endregion
 
-                #region RowHeight properties
-                else if (propertyName == RowHeightProperty.PropertyName)
-                    // note that BaseItemsSource.RowHeight is set in the above BaseItemsSource!=null section
-                    _listView.RowHeight = RowHeight;
+                    #region Data mapping and filtering
+                    //else if (propertyName == SourcePropertyMapProperty.PropertyName || propertyName == VisibilityTestProperty.PropertyName || propertyName == SubGroupTypeProperty.PropertyName)
+                    //    UpdateBaseItemsSource();
+                    #endregion
+
+                    #region Row selection properties
+                    else if (propertyName == SelectedItemProperty.PropertyName && GroupToggleBehavior != GroupToggleBehavior.None)
+                        AddSelectedItem(SelectedItem);
+                    // SelectedItems cannot be changed
+                    #endregion
 
 
-                // HasUnevenRows ... we are assuming this is always the case
-                #endregion
+                    #region Separator Properties
+                    else if (propertyName == SeparatorVisibilityProperty.PropertyName)
+                        BaseItemsSource.SeparatorVisibility = SeparatorVisibility;
+                    else if (propertyName == SeparatorLeftIndentProperty.PropertyName)
+                        BaseItemsSource.SeparatorLeftIndent = SeparatorLeftIndent;
+                    else if (propertyName == SeparatorRightIndentProperty.PropertyName)
+                        BaseItemsSource.SeparatorRightIndent = SeparatorRightIndent;
+                    else if (propertyName == SeparatorHeightProperty.PropertyName)
+                        BaseItemsSource.RequestedSeparatorHeight = SeparatorHeight;
+                    else if (propertyName == SeparatorColorProperty.PropertyName)
+                        BaseItemsSource.SeparatorColor = SeparatorColor;
+                    #endregion
+                }
 
-                #region Group behavior properties
-                else if (propertyName == GroupHeaderTemplateProperty.PropertyName)
-                    _listView.GroupHeaderTemplate = GroupHeaderTemplate;
-                else if (propertyName == IsGroupingEnabledProperty.PropertyName)
-                    _listView.IsGroupingEnabled = IsGroupingEnabled;
-                #endregion
+                // Drag/Drop properties (Editable) are managed privately 
 
-                #region Separator properties
-                // _listView.SeparatorVisibility is set to None in Init();
-                //else if (propertyName == IsSeparatorVisibleProperty.PropertyName)
-                //    _listView.SeparatorVisibility = IsSeparatorVisible ? Xamarin.Forms.SeparatorVisibility.Default : Xamarin.Forms.SeparatorVisibility.None;
-                else if (propertyName == SeparatorColorProperty.PropertyName)
-                    _listView.SeparatorColor = SeparatorColor;
-                #endregion
+                if (_listView != null)
+                {
 
-                #region Xamarin.Forms.ItemsView analogs
-                else if (propertyName == ItemsSourceProperty.PropertyName)
-                    UpdateBaseItemsSource();
-                else if (propertyName == ItemTemplatesProperty.PropertyName)
-                    _listView.ItemTemplate = ItemTemplates;
+                    #region Xamarin.Forms.ListView analogs
 
-                #endregion Xamarin.Forms.ItemsView analogs
+                    #region Header / Footer properties
+                    if (propertyName == HeaderProperty.PropertyName)
+                        _listView.Header = Header;
+                    else if (propertyName == HeaderTemplateProperty.PropertyName)
+                        _listView.HeaderTemplate = HeaderTemplate;
+                    else if (propertyName == FooterProperty.PropertyName)
+                        _listView.Footer = Footer;
+                    else if (propertyName == FooterTemplateProperty.PropertyName)
+                        _listView.FooterTemplate = FooterTemplate;
+                    #endregion
 
-                #endregion Xamarin.Forms.ListView analogs
-            }
+                    // SelectedItem handled above in BaseItemsSource!=null section
+
+                    #region RowHeight properties
+                    else if (propertyName == RowHeightProperty.PropertyName)
+                        // note that BaseItemsSource.RowHeight is set in the above BaseItemsSource!=null section
+                        _listView.RowHeight = RowHeight;
+
+
+                    // HasUnevenRows ... we are assuming this is always the case
+                    #endregion
+
+                    #region Group behavior properties
+                    else if (propertyName == GroupHeaderTemplateProperty.PropertyName)
+                        _listView.GroupHeaderTemplate = GroupHeaderTemplate;
+                    else if (propertyName == IsGroupingEnabledProperty.PropertyName)
+                        _listView.IsGroupingEnabled = IsGroupingEnabled;
+                    #endregion
+
+                    #region Separator properties
+                    // _listView.SeparatorVisibility is set to None in Init();
+                    //else if (propertyName == IsSeparatorVisibleProperty.PropertyName)
+                    //    _listView.SeparatorVisibility = IsSeparatorVisible ? Xamarin.Forms.SeparatorVisibility.Default : Xamarin.Forms.SeparatorVisibility.None;
+                    else if (propertyName == SeparatorColorProperty.PropertyName)
+                        _listView.SeparatorColor = SeparatorColor;
+                    #endregion
+
+                    #region Xamarin.Forms.ItemsView analogs
+                    else if (propertyName == ItemsSourceProperty.PropertyName)
+                        UpdateBaseItemsSource();
+                    else if (propertyName == ItemTemplatesProperty.PropertyName)
+                        _listView.ItemTemplate = ItemTemplates;
+                    else if (propertyName == BackgroundColorProperty.PropertyName)
+                        _listView.BackgroundColor = BackgroundColor;
+                    #endregion Xamarin.Forms.ItemsView analogs
+
+                    #endregion Xamarin.Forms.ListView analogs
+                }
+            });
         }
         #endregion
 
@@ -809,8 +817,8 @@ namespace Forms9Patch
                 _processingItemTapped = true;
                 _listView.SelectedItem = null;
 
-                var tappedItemWrapper = e.ItemWrapper;
-                var group = tappedItemWrapper.Parent ?? (GroupWrapper)_listView.ItemsSource;
+                var tappedItemWrapper = e?.ItemWrapper;
+                //var group = tappedItemWrapper.Parent ?? (GroupWrapper)_listView.ItemsSource;
 
                 if (tappedItemWrapper?.Source != null)
                 {
@@ -822,13 +830,13 @@ namespace Forms9Patch
                     {
                         case GroupToggleBehavior.None:
                             _internalAddRemove = true;
-                            SelectedItems.Clear();
+                            SelectedItems?.Clear();
                             _internalAddRemove = false;
                             SelectedItem = null;
                             if (_selectedItemWrapper != null)
                                 _selectedItemWrapper.IsSelected = false;
                             _selectedItemWrapper = null;
-                            if (_selectedItemWrappers.Count > 0)
+                            if (_selectedItemWrappers != null && _selectedItemWrappers.Count > 0)
                             {
                                 foreach (var item in _selectedItemWrappers)
                                     item.IsSelected = false;
@@ -844,7 +852,7 @@ namespace Forms9Patch
                             }
                             break;
                         case GroupToggleBehavior.Multiselect:
-                            if (_selectedItemWrappers.Contains(tappedItemWrapper))
+                            if (_selectedItemWrappers?.Contains(tappedItemWrapper) ?? false)
                             {
                                 if (_listView.SelectedItem == tappedItemWrapper)
                                     _listView.SelectedItem = null;
@@ -899,6 +907,7 @@ namespace Forms9Patch
         {
             if (e?.Item is ItemWrapper itemWrapper)
             {
+                itemWrapper.ListView = this;
                 //System.Diagnostics.Debug.WriteLine("APPEARING: " + itemWrapper.Source);
                 if (!_visibleItemWrappers.Contains(itemWrapper))
                     _visibleItemWrappers.Add(itemWrapper);
@@ -934,6 +943,7 @@ namespace Forms9Patch
                     if (itemWrapper.Source == SelectedItem)
                         _listView.SelectedItem = null;
                 }
+                itemWrapper.ListView = null;
             }
 
         }
@@ -1106,7 +1116,7 @@ namespace Forms9Patch
                     break;
             }
         }
-
+        /*
         void ReevaluateSelectedItems()
         {
             // remove any SelectedItems that are not a Item.Source in the _baseItemsSource
@@ -1133,7 +1143,7 @@ namespace Forms9Patch
                     AddSelectedItem(SelectedItem);
             }
         }
-
+        */
         #endregion
 
 
@@ -1152,8 +1162,10 @@ namespace Forms9Patch
                 //groupWrapper.LongPressed -= OnLongPressed;
                 //groupWrapper.LongPressing -= OnLongPressing;
             }
+
             if (ItemsSource != null)
             {
+
                 groupWrapper = new GroupWrapper();
 
                 #region Gestures
@@ -1170,9 +1182,9 @@ namespace Forms9Patch
 
                 #region Data mapping and filtering
                 groupWrapper.BindingContext = this;
-                groupWrapper.SourceSubPropertyMap = SourcePropertyMap;
-                groupWrapper.SubGroupType = SubGroupType;
-                groupWrapper.VisibilityTest = VisibilityTest;
+                //groupWrapper.SourceSubPropertyMap = SourcePropertyMap;
+                //groupWrapper.SubGroupType = SubGroupType;
+                //groupWrapper.VisibilityTest = VisibilityTest;
                 #endregion
 
                 #region RowHeight Properties
@@ -1201,10 +1213,8 @@ namespace Forms9Patch
             else
                 BaseItemsSource = null;
 
-            if (P42.Utils.Environment.IsOnMainThread)
-                Update_listViewItemsSourceAction();
-            else
-                Device.BeginInvokeOnMainThread(Update_listViewItemsSourceAction);
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(Update_listViewItemsSourceAction);
+
             _resetScrollToSelected = true;
             _scrollResetAt = DateTime.Now;
         }
@@ -1336,8 +1346,6 @@ namespace Forms9Patch
         public bool ScrollBy(double delta, bool animated = true) => _listView.ScrollBy(delta, animated);
 
 
-        int _scrollToInvocations;
-
         /// <summary>
         /// Scrolls to item in group
         /// </summary>
@@ -1367,7 +1375,6 @@ namespace Forms9Patch
 
         bool ScrollTo(DeepDataSet dataSet, ScrollToPosition position, bool animated = true)
         {
-            _scrollToInvocations++;
             if (dataSet == null)
                 return false;
             var offset = dataSet.Offset + _listView.HeaderHeight;
@@ -1423,6 +1430,7 @@ namespace Forms9Patch
             var result = BaseItemsSource?.TwoDeepDataSetForOffset(offset);
             return result;
         }
+
 
         #endregion
 

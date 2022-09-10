@@ -63,6 +63,9 @@ namespace Forms9Patch.Droid
         public LineBreakMode LineBreakMode = (LineBreakMode)Label.LineBreakModeProperty.DefaultValue;
         public float SyncFontSize = -1;
         public float RenderedFontSize = -1;
+        public string ElementHtmlText;
+        public string ElementText;
+        public float LineHeight = -1;
         #endregion
 
 
@@ -84,8 +87,23 @@ namespace Forms9Patch.Droid
             LineBreakMode = source.LineBreakMode;
             SyncFontSize = source.SyncFontSize;
             RenderedFontSize = source.RenderedFontSize;
+            ElementHtmlText = source.ElementHtmlText;
+            ElementText = source.ElementText;
+            LineHeight = source.LineHeight;
         }
         #endregion
+
+
+        public override string ToString()
+        {
+            var result = "{ ";
+            result += ElementHtmlText ?? ElementText;
+            result += ", (" + AvailWidth + "," + AvailHeight + "), ";
+            result += ", tsz:" + TextSize + ", ";
+            result += ", fit:" + AutoFit + ", ";
+            result += ", brk:" + LineBreakMode;
+            return result;
+        }
 
 
         #region Equality Methods
@@ -117,11 +135,14 @@ namespace Forms9Patch.Droid
                 return false;
 
             return (System.Math.Abs(a.TextSize - b.TextSize) < 0.1)
+                && a.ElementText == b.ElementText
+                && a.ElementHtmlText == b.ElementHtmlText
                 && a.Lines == b.Lines
                 && a.AutoFit == b.AutoFit
                 && a.LineBreakMode == b.LineBreakMode
                 && a._javaText == b._javaText
-                && a.Typeface == b.Typeface;
+                && a.Typeface == b.Typeface
+                && System.Math.Abs(a.LineHeight - b.LineHeight) < 0.01;
             /*
             if (System.Math.Abs(a.TextSize - b.TextSize) > 0.1)
             {

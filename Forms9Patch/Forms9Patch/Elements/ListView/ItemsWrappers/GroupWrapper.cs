@@ -11,11 +11,13 @@ using System.Diagnostics;
 
 namespace Forms9Patch
 {
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     class GroupWrapper : ItemWrapper<object>, IList<ItemWrapper>, ICollection<ItemWrapper>, IEnumerable<ItemWrapper>, IEnumerable, IList, ICollection, IReadOnlyList<ItemWrapper>, IReadOnlyCollection<ItemWrapper>, INotifyCollectionChanged
     {
 
         #region Properties
-
+        /*
         #region SourceSubPropertyMap property
         /// <summary>
         /// backing store for SourceSubPropertyMap property
@@ -45,7 +47,7 @@ namespace Forms9Patch
             set { SetValue(SubGroupTypeProperty, value); }
         }
         #endregion SubGroupType property
-
+        */
         #region GroupHeader properties
         /// <summary>
         /// backing store for GroupHeaderCellHeight property
@@ -77,21 +79,15 @@ namespace Forms9Patch
         #region Fields
         readonly ObservableCollection<ItemWrapper> _itemWrappers = new ObservableCollection<ItemWrapper>();
 
-        List<string> _subPropertyMap;
-
         IEnumerable SourceChildren;
 
-        string childrenPropertyName;
         #endregion
 
 
         #region Constructors
-        public GroupWrapper(object source, List<string> sourcePropertyMap, Func<object, bool> visibleItemTest = null, Type subgroupType = null) : this()
+        public GroupWrapper(object source) : this()
         {
-            VisibilityTest = visibleItemTest;
             ContentType = GroupContentType.Unknown;
-            SourceSubPropertyMap = sourcePropertyMap;
-            SubGroupType = subgroupType;
             Source = source;
         }
 
@@ -126,7 +122,7 @@ namespace Forms9Patch
             base.OnPropertyChanging(propertyName);
             if (propertyName == SourceProperty.PropertyName && Source != null)
             {
-                SourceChildren = string.IsNullOrWhiteSpace(childrenPropertyName) ? Source as IEnumerable : Source.GetPropertyValue(childrenPropertyName) as IEnumerable;
+                SourceChildren = Source as IEnumerable;
                 if (SourceChildren is INotifyCollectionChanged observableCollection)
                     observableCollection.CollectionChanged -= OnSourceCollectionChanged;
             }
@@ -146,31 +142,13 @@ namespace Forms9Patch
                     SourceChildren = null;
                     return;
                 }
-                SourceChildren = string.IsNullOrWhiteSpace(childrenPropertyName) ? Source as IEnumerable : Source.GetPropertyValue(childrenPropertyName) as IEnumerable;
+                SourceChildren =  Source as IEnumerable;
                 if (SourceChildren == null)
                     return;
                 foreach (var obj in SourceChildren)
                     AddSourceObject(obj);
                 if (SourceChildren is INotifyCollectionChanged observableCollection)
                     observableCollection.CollectionChanged += OnSourceCollectionChanged;
-            }
-            else if (propertyName == SourceSubPropertyMapProperty.PropertyName)
-            {
-                if (SourceSubPropertyMap != null && SourceSubPropertyMap.Count > 0)
-                {
-                    _subPropertyMap = SourceSubPropertyMap.GetRange(1, SourceSubPropertyMap.Count - 1);
-                    childrenPropertyName = SourceSubPropertyMap[0];
-                }
-                var source = Source;
-                Source = null;
-                Source = source;
-            }
-            else if (propertyName == VisibilityTestProperty.PropertyName || propertyName == SubGroupTypeProperty.PropertyName)
-            {
-                // delete and reset Source so the VisibilityTest can be applied as the new Source is converted to items
-                var source = Source;
-                Source = null;
-                Source = source;
             }
             #endregion
 
@@ -261,42 +239,6 @@ namespace Forms9Patch
             set;
         }
 
-        /// <summary>
-        /// The visibility test property backing store.
-        /// </summary>
-        public static readonly BindableProperty VisibilityTestProperty = BindableProperty.Create(nameof(VisibilityTest), typeof(Func<object, bool>), typeof(GroupWrapper), default(Func<object, bool>));
-        /// <summary>
-        /// Gets or sets the test used to determine if a source item or group will be visible.
-        /// </summary>
-        /// <value>The visibility test.</value>
-        public Func<object, bool> VisibilityTest
-        {
-            get { return (Func<object, bool>)GetValue(VisibilityTestProperty); }
-            set { SetValue(VisibilityTestProperty, value); }
-        }
-
-
-        // note: Even though a items in a group source may not be unique to  (ex: Source= { a, a, "pizza", null, null }), a GroupWrapper's ItemWrappers are because they are each created from a new instance of ItemWrapper.
-
-        int SourceCount()
-        {
-            int sourceCount;
-            if (SourceChildren is ICollection<IEnumerable> iCollectionIenumerble)
-                sourceCount = iCollectionIenumerble.Count;
-            else
-            {
-                if (SourceChildren is ICollection iCollection)
-                    sourceCount = iCollection.Count;
-                else
-                {
-                    sourceCount = 0;
-                    foreach (var obj in SourceChildren)
-                        sourceCount++;
-                }
-            }
-            return sourceCount;
-        }
-
         int SourceIndexOf(ItemWrapper itemWrapper)
         {
             if (SourceChildren == null)
@@ -346,7 +288,6 @@ namespace Forms9Patch
 
         void SourceAdd(ItemWrapper itemWrapper)
         {
-            //System.Diagnostics.Debug.WriteLine ("[" + this + "].MateAdd(" + itemWrapper + ")");
             if (SourceChildren == null)
                 throw new MissingMemberException("Cannot SourceAdd a source item into a null SourceChildren");
             if (SourceChildren is ICollection<IEnumerable> iCollectionIEnumerable)
@@ -366,7 +307,6 @@ namespace Forms9Patch
 
         void SourceRemove(ItemWrapper itemWrapper)
         {
-            //System.Diagnostics.Debug.WriteLine ("[" + this + "].MateRemove(" + itemWrapper + ")");
             if (SourceChildren == null)
                 throw new MissingMemberException("Cannot SourceRemove a source item from a null SourceChildren");
             if (SourceChildren is ICollection<IEnumerable> iCollectionIEnumerable)
@@ -390,7 +330,6 @@ namespace Forms9Patch
         {
             if (itemWrapper == null)
                 return;
-            SubscribeToItemWrapperSourcePropertyChanged(itemWrapper);
             itemWrapper.PropertyChanged += OnItemWrapperPropertyChanged;
             itemWrapper.PropertyChanging += OnItemWrapperPropertyChanging;
             itemWrapper.Tapped += OnTapped;
@@ -401,13 +340,8 @@ namespace Forms9Patch
             itemWrapper.Panning += OnPanning;
             itemWrapper.BindingContext = this;
             itemWrapper.Parent = this;
-            //if (itemWrapper.GetType()==typeof(GroupWrapper))
             if (itemWrapper is GroupWrapper groupWrapper)
             {
-                //var groupWrapper = itemWrapper as GroupWrapper;
-                groupWrapper.VisibilityTest = groupWrapper.VisibilityTest ?? VisibilityTest;
-                groupWrapper.SubGroupType = groupWrapper.SubGroupType ?? SubGroupType;
-                groupWrapper.SourceSubPropertyMap = _subPropertyMap;
                 groupWrapper.RequestedGroupHeaderRowHeight = RequestedGroupHeaderRowHeight;
                 groupWrapper.GroupHeaderBackgroundColor = GroupHeaderBackgroundColor;
             }
@@ -450,7 +384,6 @@ namespace Forms9Patch
         {
             if (itemWrapper == null)
                 return;
-            UnsubscribeToItemWrapperSourcePropertyChanged(itemWrapper);
             if (NotifySourceOfChanges)
                 SourceRemove(itemWrapper);
             itemWrapper.PropertyChanged -= OnItemWrapperPropertyChanged;
@@ -571,23 +504,24 @@ namespace Forms9Patch
         {
 
             string propertyName = null;
+            /*
             List<string> subgroupPropertyMap;
             if (_subPropertyMap != null && _subPropertyMap.Count > 0)
             {
                 subgroupPropertyMap = new List<string>(_subPropertyMap) { [0] = null };
                 propertyName = _subPropertyMap[0];
             }
-
+            */
             var children = string.IsNullOrWhiteSpace(propertyName) ? sourceObject : sourceObject.GetPropertyValue(propertyName);
             if (!(children is string))
             {
                 if (children is IEnumerable iEnumerable)
                 {
-                    if (SubGroupType == null || children.GetType() == SubGroupType)
+                    //if (SubGroupType == null || children.GetType() == SubGroupType)
                     {
                         // groups
                         VerifyContentType(GroupContentType.Lists);
-                        return new GroupWrapper(sourceObject, _subPropertyMap, VisibilityTest, SubGroupType);
+                        return new GroupWrapper(sourceObject); //, _subPropertyMap, VisibilityTest, SubGroupType);
                     }
                 }
             }
@@ -616,7 +550,7 @@ namespace Forms9Patch
 
         void AddSourceObject(object sourceObject)
         {
-            if (VisibilityTest == null || VisibilityTest(sourceObject))
+            //if (VisibilityTest == null || VisibilityTest(sourceObject))
             {
                 var before = NotifySourceOfChanges;
                 NotifySourceOfChanges = false;
@@ -624,8 +558,8 @@ namespace Forms9Patch
                 Add(itemWrapper);
                 NotifySourceOfChanges = before;
             }
-            else
-                SubscribeToHiddenSourcePropertyChanged(sourceObject);
+            //else
+            //    SubscribeToHiddenSourcePropertyChanged(sourceObject);
         }
 
         int IndexFromSourceIndex(int requestedSourceIndex)
@@ -645,7 +579,7 @@ namespace Forms9Patch
             var sourceIndex = 0;
             foreach (var sourceItem in SourceChildren)
             {
-                if (VisibilityTest == null || VisibilityTest(sourceItem))
+                //if (VisibilityTest == null || VisibilityTest(sourceItem))
                 {
                     localIndex++;
                     if (sourceIndex == requestedSourceIndex)
@@ -658,7 +592,7 @@ namespace Forms9Patch
 
         void InsertSourceObject(int sourceIndex, object sourceObject)
         {
-            if (VisibilityTest == null || VisibilityTest(sourceObject))
+            //if (VisibilityTest == null || VisibilityTest(sourceObject))
             {
                 var before = NotifySourceOfChanges;
                 NotifySourceOfChanges = false;
@@ -670,8 +604,8 @@ namespace Forms9Patch
                     Add(itemWrapper);
                 NotifySourceOfChanges = before;
             }
-            else
-                SubscribeToHiddenSourcePropertyChanged(sourceObject);
+            //else
+            //    SubscribeToHiddenSourcePropertyChanged(sourceObject);
         }
 
         void RemoveItemWithSourceIndex(int sourceIndex)
@@ -689,7 +623,7 @@ namespace Forms9Patch
         void ReplaceItemAtSourceIndex(int sourceIndex, object oldSourceObject, object newSourceObject)
         {
             var index = IndexFromSourceIndex(sourceIndex);
-            if (VisibilityTest == null || (VisibilityTest(newSourceObject) && VisibilityTest(oldSourceObject)))
+            //if (VisibilityTest == null || (VisibilityTest(newSourceObject) && VisibilityTest(oldSourceObject)))
             {
                 // replace object
                 var before = NotifySourceOfChanges;
@@ -698,6 +632,7 @@ namespace Forms9Patch
                 this[index] = itemWrapper;
                 NotifySourceOfChanges = before;
             }
+            /*
             else if (VisibilityTest?.Invoke(oldSourceObject) ?? default)
             {
                 // remove object
@@ -709,85 +644,12 @@ namespace Forms9Patch
                 // insert object
                 InsertSourceObject(sourceIndex, newSourceObject);
             }
-        }
-
-        // used for subscribing to hidden source objects
-        void SubscribeToHiddenSourcePropertyChanged(object source)
-        {
-            if (source is INotifyPropertyChanged iNotifiableSource)
-                iNotifiableSource.PropertyChanged += OnHiddenSourcePropertyChanged;
+            */
         }
 
 
-        void UnsubscribeToHiddenSourcePropertyChanged(object source)
-        {
-            if (source is INotifyPropertyChanged iNotifiableSource)
-                iNotifiableSource.PropertyChanged -= OnHiddenSourcePropertyChanged;
-        }
 
 
-        // used for subscribing to unhidden source objects
-        void SubscribeToItemWrapperSourcePropertyChanged(ItemWrapper itemWrapper)
-        {
-            if (itemWrapper.Source is INotifyPropertyChanged iNotifiableSource)
-                iNotifiableSource.PropertyChanged += OnItemWrapperSourcePropertyChanged;
-        }
-
-
-        // used for unsubscribing to unhidden source objects
-        void UnsubscribeToItemWrapperSourcePropertyChanged(ItemWrapper itemWrapper)
-        {
-            if (itemWrapper.Source is INotifyPropertyChanged iNotifiableSource)
-                iNotifiableSource.PropertyChanged -= OnItemWrapperSourcePropertyChanged;
-        }
-
-        void OnItemWrapperSourcePropertyChanged(object source, PropertyChangedEventArgs e)
-        {
-            // if the change impacts visibility then remove itemwrapper from groupwrapper
-            if (VisibilityTest != null && !VisibilityTest(source))
-                RefreshVisibility();
-        }
-
-        void OnHiddenSourcePropertyChanged(object source, PropertyChangedEventArgs e)
-        {
-            if (VisibilityTest != null && VisibilityTest(source))
-                RefreshVisibility();
-        }
-
-        void RefreshVisibility()
-        {
-            if (VisibilityTest != null)
-            {
-                var before = NotifySourceOfChanges;
-                NotifySourceOfChanges = false;
-                var index = 0;
-                var sourceIndex = 0;
-                foreach (var sourceItem in SourceChildren)
-                {
-                    if (VisibilityTest(sourceItem))
-                    {
-                        if (index >= _itemWrappers.Count || _itemWrappers[index].Source != sourceItem)
-                        {
-                            UnsubscribeToHiddenSourcePropertyChanged(sourceItem);
-                            InsertSourceObject(sourceIndex, sourceItem);
-                        }
-                        index++;
-                    }
-                    else
-                    {
-                        if (index < _itemWrappers.Count && _itemWrappers[index].Source == sourceItem)
-                        {
-                            RemoveAt(index);
-                            SubscribeToHiddenSourcePropertyChanged(sourceItem);
-                        }
-                    }
-                    sourceIndex++;
-                }
-                if (index != _itemWrappers.Count)
-                    throw new InvalidDataContractException("should have iterated through all visible sourceItems and itemWrappers");
-                NotifySourceOfChanges = before;
-            }
-        }
 
         #endregion
 
@@ -1436,7 +1298,7 @@ namespace Forms9Patch
                 case NotifyCollectionChangedAction.Reset:
                     Clear();
                     Source = sender;
-                    SourceChildren = string.IsNullOrWhiteSpace(childrenPropertyName) ? sender as IEnumerable : sender.GetPropertyValue(childrenPropertyName) as IEnumerable;
+                    SourceChildren = sender as IEnumerable;
                     if (SourceChildren == null || Source == null)
                     {
                         throw new ArgumentException("Group source must be IEnumerable -or- SourcePropertyMap is set to an IEnumerable property of source");

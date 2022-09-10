@@ -1,4 +1,5 @@
-using System;
+﻿using System;
+using System.ComponentModel;
 using SkiaSharp.Views.Forms;
 using Xamarin.Forms;
 using SkiaSharp;
@@ -6,11 +7,6 @@ using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
 using System.Reflection;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Linq;
-using System.Collections.Specialized;
-using Xamarin.Forms.Internals;
 using Newtonsoft.Json;
 
 namespace Forms9Patch
@@ -18,7 +14,9 @@ namespace Forms9Patch
     /// <summary>
     /// Forms9Patch.Image element
     /// </summary>
-    public class Image : SkiaSharp.Views.Forms.SKCanvasView, IImage, IImageController, IExtendedShape, IBubbleShape
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
+    public class Image : SKCanvasView, IImage, IImageController, IExtendedShape, IBubbleShape, IDisposable
     {
         #region Static Implementation
 
@@ -38,8 +36,9 @@ namespace Forms9Patch
         /// <summary>
         /// Apps run faster when Embedded Resources image don't have to be extracted EVERY SINGLE TIME.  This clears the cache of these images.
         /// </summary>
-        /// <param name="resourceId">The ResourceId of the image.  If null, all cahced images are cleared.</param>
-        public static void ClearEmbeddedResourceCache(string resourceId = null) => P42.Utils.EmbeddedResourceCache.Clear(resourceId, EmbeddedResourceImageCacheFolderName);
+        /// <param name="resourceId"></param>
+        /// <param name="assembly"></param>
+        public static void ClearEmbeddedResourceCache(string resourceId = null, Assembly assembly = null) => P42.Utils.EmbeddedResourceCache.Clear(resourceId, assembly, EmbeddedResourceImageCacheFolderName);
         #endregion
 
         #endregion
@@ -164,8 +163,8 @@ namespace Forms9Patch
             get
             {
                 return _f9pImageData != null && _f9pImageData.ValidImage
-                                                             ? new Xamarin.Forms.Size(SourceImageWidth, SourceImageHeight)
-                    : Xamarin.Forms.Size.Zero;
+                    ? new Size(SourceImageWidth, SourceImageHeight)
+                    : Size.Zero;
             }
         }
 
@@ -206,9 +205,9 @@ namespace Forms9Patch
         /// Gets or sets the orientation of the shape if it's an extended element shape
         /// </summary>
         /// <value>The forms9 patch. IS hape. extended element shape orientation.</value>
-        Xamarin.Forms.StackOrientation IExtendedShape.ExtendedElementShapeOrientation
+        StackOrientation IExtendedShape.ExtendedElementShapeOrientation
         {
-            get => (Xamarin.Forms.StackOrientation)GetValue(ExtendedElementShapeOrientationProperty);
+            get => (StackOrientation)GetValue(ExtendedElementShapeOrientationProperty);
             set => SetValue(ExtendedElementShapeOrientationProperty, value);
         }
         #endregion
@@ -272,6 +271,23 @@ namespace Forms9Patch
         }
         #endregion HasShadow property
 
+
+        #region MakeRoomForShadow
+        /// <summary>
+        /// Backing store for ContentView.MakeRoomForShadow property
+        /// </summary>
+        internal static readonly BindableProperty InvisibleShadowProperty = BindableProperty.Create(nameof(InvisibleShadow), typeof(bool), typeof(Image), default);
+        /// <summary>
+        /// controls value of .MakeRoomForShadow property
+        /// </summary>
+        internal bool InvisibleShadow
+        {
+            get => (bool)GetValue(InvisibleShadowProperty);
+            set => SetValue(InvisibleShadowProperty, value);
+        }
+        #endregion
+
+
         #region ShadowInverted property
         /// <summary>
         /// backing store for ShadowInverted property
@@ -304,7 +320,7 @@ namespace Forms9Patch
         /// <summary>
         /// The boarder color property.
         /// </summary>
-        public static readonly BindableProperty BorderColorProperty = ShapeBase.OutlineColorProperty;
+        public static readonly BindableProperty BorderColorProperty = ShapeBase.BorderColorProperty;
         /// <summary>
         /// Gets or sets the color of the boarder.
         /// </summary>
@@ -333,7 +349,7 @@ namespace Forms9Patch
         /// <summary>
         /// The boarder radius property.
         /// </summary>
-        public static readonly BindableProperty BorderRadiusProperty = ShapeBase.OutlineRadiusProperty;
+        public static readonly BindableProperty BorderRadiusProperty = ShapeBase.BorderRadiusProperty;
         /// <summary>
         /// Gets or sets the boarder radius.
         /// </summary>
@@ -362,15 +378,15 @@ namespace Forms9Patch
         /// <summary>
         /// The boarder width property.
         /// </summary>
-        public static readonly BindableProperty BorderWidthProperty = ShapeBase.OutlineWidthProperty;
+        public static readonly BindableProperty BorderWidthProperty = ShapeBase.BorderWidthProperty;
         /// <summary>
         /// Gets or sets the width of the boarder.
         /// </summary>
         /// <value>The width of the boarder.</value>
         public float BorderWidth
         {
-            get => (float)GetValue(OutlineWidthProperty);
-            set => SetValue(OutlineWidthProperty, value);
+            get => (float)GetValue(BorderWidthProperty);
+            set => SetValue(BorderWidthProperty, value);
         }
         #endregion OutlineWidth property
 
@@ -395,7 +411,7 @@ namespace Forms9Patch
         /// <summary>
         /// Returns index instance ID for this class (starts at 0)
         /// </summary>
-        public int InstanceId => _f9pId;
+        public int InstanceId { get; private set; }
 
         #endregion IElement
 
@@ -497,7 +513,6 @@ namespace Forms9Patch
         #region Fields and Private Properties
         internal bool FillOrLayoutSet;
         static int _instances;
-        readonly int _f9pId;
         Xamarin.Forms.ImageSource _xfImageSource;
 
         F9PImageData _f9pImageData;
@@ -513,6 +528,22 @@ namespace Forms9Patch
         bool DrawFill => BackgroundColor.A > 0.01;
 
         bool IsSegment => ((IExtendedShape)this).ExtendedElementShape == ExtendedElementShape.SegmentEnd || ((IExtendedShape)this).ExtendedElementShape == ExtendedElementShape.SegmentMid || ((IExtendedShape)this).ExtendedElementShape == ExtendedElementShape.SegmentStart;
+
+        #region FailAction
+        /// <summary>
+        /// Backing store for Image FailAction property
+        /// </summary>
+        public static readonly BindableProperty FailActionProperty = BindableProperty.Create(nameof(FailAction), typeof(FailAction), typeof(Image), FailAction.ShowAlert);
+        /// <summary>
+        /// controls value of Image FailAction property
+        /// </summary>
+        public FailAction FailAction
+        {
+            get => (FailAction)GetValue(FailActionProperty);
+            set => SetValue(FailActionProperty, value);
+        }
+        #endregion
+
         #endregion
 
 
@@ -527,18 +558,21 @@ namespace Forms9Patch
         /// </summary>
         public Image()
         {
-            _f9pId = _instances++;
+            InstanceId = _instances++;
             if (Device.RuntimePlatform != Device.iOS)
             {
                 Device.StartTimer(TimeSpan.FromMilliseconds(100), () =>
                 {
-                    if ((DateTime.Now - _lastPaint) is TimeSpan elapsed && elapsed > TimeSpan.FromMilliseconds(100))
+                    Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
                     {
-                        _repainting = true;
-                        _lastPaint = DateTime.MaxValue;
-                        Invalidate();
-                    }
-                    return true;
+                        if ((DateTime.Now - _lastPaint) is TimeSpan elapsed && elapsed > TimeSpan.FromMilliseconds(100))
+                        {
+                            _repainting = true;
+                            _lastPaint = DateTime.MaxValue;
+                            Invalidate();
+                        }
+                    });
+                    return false;
                 });
             }
         }
@@ -552,7 +586,7 @@ namespace Forms9Patch
         {
             if (assembly == null && Device.RuntimePlatform != Device.UWP)
                 assembly = assembly ?? Assembly.GetCallingAssembly();
-            Source = Forms9Patch.ImageSource.FromMultiResource(embeddedResourceId, assembly);
+            Source = ImageSource.FromMultiResource(embeddedResourceId, assembly);
         }
 
         /// <summary>
@@ -569,7 +603,7 @@ namespace Forms9Patch
         /// <param name="image">Image.</param>
         public Image(Xamarin.Forms.Image image)
         {
-            _f9pId = _instances++;
+            InstanceId = _instances++;
             Fill = image.Aspect.ToF9pFill();
             FillOrLayoutSet = !image.HasDefaultAspectAndLayoutOptions();
             //IsOpaque = image.IsOpaque;
@@ -603,7 +637,7 @@ namespace Forms9Patch
         /// <param name="image"></param>
         public Image(Image image)
         {
-            _f9pId = _instances++;
+            InstanceId = _instances++;
             if (image != null)
             {
                 //IsOpaque = image.IsOpaque;
@@ -645,6 +679,33 @@ namespace Forms9Patch
                 Source = image.Source;
             }
         }
+
+        private bool _disposed;
+        /// <summary>
+        /// Disposed the image
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed && disposing)
+            {
+                _disposed = true;
+                Source = null;
+                _f9pImageData?.Dispose();
+                _f9pImageData = null;
+                _sourceRangeLists = null;
+            }
+        }
+
+        /// <summary>
+        /// Dispose the image
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
         #endregion
 
 
@@ -664,22 +725,36 @@ namespace Forms9Patch
         /// <param name="embeddedResourceId"></param>
         public static implicit operator Image(string embeddedResourceId)
         {
-            var assembly = (Assembly)typeof(Assembly).GetTypeInfo().GetDeclaredMethod("GetCallingAssembly").Invoke(null, new object[0]);
-            return new Image(embeddedResourceId, assembly);
+            var assembly = (Assembly)typeof(Assembly).GetTypeInfo().GetDeclaredMethod("GetCallingAssembly").Invoke(null, Array.Empty<object>());
+            var result = new Image(embeddedResourceId, assembly);
+            return result;
         }
         #endregion
 
 
         #region Property Change Handlers
+        bool invalidating = false;
+        bool pendingInvalidate = false;
         void Invalidate()
         {
-            if (P42.Utils.Environment.IsOnMainThread)
+            if (invalidating)
+            {
+                pendingInvalidate = true;
+                System.Diagnostics.Debug.WriteLine("pending");
+                return; 
+            }
+            invalidating = true;
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
             {
                 InvalidateMeasure();
                 InvalidateSurface();
-            }
-            else
-                Device.BeginInvokeOnMainThread(Invalidate);
+                invalidating = false;
+                if (pendingInvalidate)
+                {
+                    pendingInvalidate = false;
+                    Invalidate();
+                }
+            });
         }
 
         async Task SetImageSourceAsync()
@@ -696,30 +771,29 @@ namespace Forms9Patch
                 _f9pImageData = null;
                 _sourceRangeLists = null;
 
-                ((Xamarin.Forms.IImageController)this)?.SetIsLoading(true);
+                ((IImageController)this)?.SetIsLoading(true);
                 _xfImageSource = Source;
 
                 if (_xfImageSource != null)
                 {
                     _xfImageSource.PropertyChanged += OnImageSourcePropertyChanged;
-                    _f9pImageData = await _xfImageSource.FetchF9pImageData(this);
+                    _f9pImageData = await _xfImageSource.FetchF9pImageData(this, failAction: FailAction);
                     _sourceRangeLists = _f9pImageData?.RangeLists;
                 }
-
-                ((Xamarin.Forms.IImageController)this)?.SetIsLoading(false);
+                ((IImageController)this)?.SetIsLoading(false);
                 Invalidate();
             }
         }
 
         private async void OnImageSourcePropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == Xamarin.Forms.UriImageSource.UriProperty.PropertyName)
+            if (e.PropertyName == UriImageSource.UriProperty.PropertyName)
             {
-                ((Xamarin.Forms.IImageController)this)?.SetIsLoading(true);
+                ((IImageController)this)?.SetIsLoading(true);
 
-                _f9pImageData = await _xfImageSource.FetchF9pImageData(this);
+                _f9pImageData = await _xfImageSource.FetchF9pImageData(this, failAction: FailAction);
                 _sourceRangeLists = _f9pImageData?.RangeLists;
-                ((Xamarin.Forms.IImageController)this)?.SetIsLoading(false);
+                ((IImageController)this)?.SetIsLoading(false);
                 Invalidate();
             }
         }
@@ -736,63 +810,68 @@ namespace Forms9Patch
                 if (Device.RuntimePlatform == Device.Android)
                     Invalidate();
             }
-
         }
+
 
         /// <summary>
         /// Called when a property has changed
         /// </summary>
         /// <param name="propertyName"></param>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Potential Code Quality Issues", "RECS0022:A catch clause that catches System.Exception and has an empty body", Justification = "<Pending>")]
         protected override void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
-            if (!P42.Utils.Environment.IsOnMainThread)
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
             {
-                Device.BeginInvokeOnMainThread(() => OnPropertyChanged(propertyName));
-                return;
-            }
+                try
+                {
+                    base.OnPropertyChanged(propertyName);
+                }
+                catch (Exception) { }
 
-            base.OnPropertyChanged(propertyName);
+                if (propertyName == ElementShapeProperty.PropertyName)
+                    ((IExtendedShape)this).ExtendedElementShape = ElementShape.ToExtendedElementShape();
+                if (propertyName == SourceProperty.PropertyName)
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                    SetImageSourceAsync();
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                if (
+                    // VisualElement
+                    propertyName == BackgroundColorProperty.PropertyName ||
+                    propertyName == OpacityProperty.PropertyName ||
 
-            if (propertyName == ElementShapeProperty.PropertyName)
-                ((IExtendedShape)this).ExtendedElementShape = ElementShape.ToExtendedElementShape();
-            if (propertyName == SourceProperty.PropertyName)
-                SetImageSourceAsync().ConfigureAwait(false);
-            if (
-                // VisualElement
-                propertyName == BackgroundColorProperty.PropertyName ||
-                propertyName == Xamarin.Forms.VisualElement.OpacityProperty.PropertyName ||
+                    // ShapeBase
+                    propertyName == ElementShapeProperty.PropertyName ||
+                    propertyName == HasShadowProperty.PropertyName ||
+                    propertyName == InvisibleShadowProperty.PropertyName ||
+                    propertyName == OutlineColorProperty.PropertyName ||
+                    propertyName == OutlineRadiusProperty.PropertyName ||
+                    propertyName == OutlineWidthProperty.PropertyName ||
+                    propertyName == ShadowInvertedProperty.PropertyName ||
 
-                // ShapeBase
-                propertyName == ElementShapeProperty.PropertyName ||
-                propertyName == HasShadowProperty.PropertyName ||
-                propertyName == OutlineColorProperty.PropertyName ||
-                propertyName == OutlineRadiusProperty.PropertyName ||
-                propertyName == OutlineWidthProperty.PropertyName ||
-                propertyName == ShadowInvertedProperty.PropertyName ||
-
-                // BubbleLayout
-                propertyName == PointerAxialPositionProperty.PropertyName ||
-                propertyName == PointerCornerRadiusProperty.PropertyName ||
-                propertyName == PointerDirectionProperty.PropertyName ||
-                propertyName == PointerLengthProperty.PropertyName ||
-                propertyName == PointerTipRadiusProperty.PropertyName ||
+                    // BubbleLayout
+                    propertyName == PointerAxialPositionProperty.PropertyName ||
+                    propertyName == PointerCornerRadiusProperty.PropertyName ||
+                    propertyName == PointerDirectionProperty.PropertyName ||
+                    propertyName == PointerLengthProperty.PropertyName ||
+                    propertyName == PointerTipRadiusProperty.PropertyName ||
 
 
-                // Image
-                //propertyName == SourceProperty.PropertyName ||  // Handled by SetImageSource()
-                propertyName == TintColorProperty.PropertyName ||
-                propertyName == FillProperty.PropertyName ||
-                propertyName == CapInsetsProperty.PropertyName ||
-                propertyName == AntiAliasProperty.PropertyName ||
+                    // Image
+                    //propertyName == SourceProperty.PropertyName ||  // Handled by SetImageSource()
+                    propertyName == TintColorProperty.PropertyName ||
+                    propertyName == FillProperty.PropertyName ||
+                    propertyName == CapInsetsProperty.PropertyName ||
+                    propertyName == AntiAliasProperty.PropertyName ||
 
-                // IExtendedElementShape
-                propertyName == ExtendedElementShapeProperty.PropertyName ||
-                propertyName == ExtendedElementShapeOrientationProperty.PropertyName ||
-                propertyName == ExtendedElementSeparatorWidthProperty.PropertyName
-               )
-            {
-                Invalidate();
-            }
+                    // IExtendedElementShape
+                    propertyName == ExtendedElementShapeProperty.PropertyName ||
+                    propertyName == ExtendedElementShapeOrientationProperty.PropertyName ||
+                    propertyName == ExtendedElementSeparatorWidthProperty.PropertyName
+                   )
+                {
+                    Invalidate();
+                }
+            });
         }
         #endregion
 
@@ -840,9 +919,7 @@ namespace Forms9Patch
             //result = new SizeRequest(new Size(reqW + shadowPaddingHz, reqH + shadowPaddingVt), new Size(10 + shadowPaddingHz, 10 + shadowPaddingVt));
             var reqSize = new Size(reqW + shadowPaddingHz, reqH + shadowPaddingVt);
             var minSize = new Size(WidthRequest > 0 ? reqSize.Width : 10 + shadowPaddingHz, HeightRequest > 0 ? reqSize.Height : 10 + shadowPaddingVt);
-            result = new SizeRequest(reqSize, minSize);
-            //System.Diagnostics.Debug.WriteLine(GetType() + "GetSizeRequest(" + widthConstraint + ", " + heightConstraint + ") = [" + result + "]");
-            return result;
+            return new SizeRequest(reqSize, minSize);
         }
 
         /*
@@ -876,7 +953,6 @@ namespace Forms9Patch
 
         internal void SharedOnPaintSurface(SKPaintSurfaceEventArgs e, SKRect rect)
         {
-
             var canvas = e.Surface?.Canvas;
             //canvas.ClipRect(rect, SKClipOperation.Intersect, false);
 
@@ -886,9 +962,8 @@ namespace Forms9Patch
 
             if (canvas == null)
                 return;
-            //canvas.Clear();
 
-            var hz = ((IExtendedShape)this).ExtendedElementShapeOrientation == Xamarin.Forms.StackOrientation.Horizontal;
+            var hz = ((IExtendedShape)this).ExtendedElementShapeOrientation == StackOrientation.Horizontal;
             var vt = !hz;
 
             var backgroundColor = BackgroundColor;
@@ -916,10 +991,10 @@ namespace Forms9Patch
                 //System.Diagnostics.Debug.WriteLine("Image.OnPaintSurface rect=" + rect);
 
                 var makeRoomForShadow = hasShadow && (backgroundColor.A > 0.01 || drawImage); // && !ShapeElement.ShadowInverted;
-                var shadowX = (float)(Forms9Patch.Settings.ShadowOffset.X * FormsGestures.Display.Scale);
-                var shadowY = (float)(Forms9Patch.Settings.ShadowOffset.Y * FormsGestures.Display.Scale);
-                var shadowR = (float)(Forms9Patch.Settings.ShadowRadius * FormsGestures.Display.Scale);
-                var shadowColor = Xamarin.Forms.Color.FromRgba(0.0, 0.0, 0.0, 0.75).ToSKColor(); //  .ToWindowsColor().ToSKColor();
+                var shadowX = (float)(Settings.ShadowOffset.X * FormsGestures.Display.Scale);
+                var shadowY = (float)(Settings.ShadowOffset.Y * FormsGestures.Display.Scale);
+                var shadowR = (float)(Settings.ShadowRadius * FormsGestures.Display.Scale);
+                var shadowColor = Color.FromRgba(0.0, 0.0, 0.0, InvisibleShadow ? 0.0 : 0.75).ToSKColor(); //  .ToWindowsColor().ToSKColor();
                 var shadowPadding = ShapeBase.ShadowPadding(this, true);
 
 
@@ -968,133 +1043,149 @@ namespace Forms9Patch
                                 break;
                         }
 
-                        var shadowPaint = new SKPaint
+                        using (var shadowPaint = new SKPaint
                         {
                             Style = SKPaintStyle.Fill,
-                            Color = shadowColor,
-                        };
-
-                        var filter = SkiaSharp.SKImageFilter.CreateDropShadow(shadowX, shadowY, shadowR / 2, shadowR / 2, shadowColor, SKDropShadowImageFilterShadowMode.DrawShadowOnly);
-                        shadowPaint.ImageFilter = filter;
-                        //var filter = SkiaSharp.SKMaskFilter.CreateBlur(SKBlurStyle.Outer, 0.5f);
-                        //shadowPaint.MaskFilter = filter;
-
-                        try
+                            Color = shadowColor
+                        })
                         {
-                            var region = new SKRegion();
-                            region.SetRect(new SKRectI((int)rect.Left, (int)rect.Top, (int)rect.Right, (int)rect.Bottom));
-                            canvas.ClipRegion(region);
 
-                            if (DrawFill)
-                                canvas.DrawPath(PerimeterPath(shadowRect, outlineRadius - (drawOutline ? outlineWidth : 0)), shadowPaint);
-                            else if (DrawImage)
-                                GenerateImageLayout(canvas, perimeter, PerimeterPath(shadowRect, outlineRadius - (drawOutline ? outlineWidth : 0)), shadowPaint);
-                        }
-                        catch (Exception exception)
-                        {
-                            var properties = new Dictionary<string, string>
+                            //var filter = SKImageFilter.CreateDropShadow(shadowX, shadowY, shadowR / 2, shadowR / 2, shadowColor, SKDropShadowImageFilterShadowMode.DrawShadowOnly);
+                            var filter = SKImageFilter.CreateDropShadowOnly(shadowX, shadowY, shadowR / 2, shadowR / 2, shadowColor);
+                            shadowPaint.ImageFilter = filter;
+                            //var filter = SkiaSharp.SKMaskFilter.CreateBlur(SKBlurStyle.Outer, 0.5f);
+                            //shadowPaint.MaskFilter = filter;
+
+                            try
+                            {
+                                var region = new SKRegion();
+                                region.SetRect(new SKRectI((int)rect.Left, (int)rect.Top, (int)rect.Right, (int)rect.Bottom));
+                                canvas.ClipRegion(region);
+
+                                using (var pPath = PerimeterPath(shadowRect, outlineRadius - (drawOutline ? outlineWidth : 0)))
+                                {
+                                    if (DrawFill)
+                                        canvas.DrawPath(pPath, shadowPaint);
+                                    else if (DrawImage)
+                                        GenerateImageLayout(canvas, perimeter, pPath, shadowPaint);
+                                }
+                            }
+                            catch (Exception exception)
+                            {
+                                var properties = new Dictionary<string, string>
                             {
                                 { nameof(shadowRect), JsonConvert.SerializeObject(shadowRect) },
                                 { "class", "Forms9Patch.ExtendedShapeAndImageView" },
                                 { "method", "Paint" },
                                 { "line", "888" }
                             };
-                            //Microsoft.AppCenter.Crashes.Crashes.TrackError(exception, properties);
-                            Analytics.TrackException?.Invoke(exception, properties);
-                            _repainting = false;
-                            return;
+                                //Microsoft.AppCenter.Crashes.Crashes.TrackError(exception, properties);
+                                Analytics.TrackException?.Invoke(exception, properties);
+                                _repainting = false;
+                                return;
+                            }
+                            canvas.Restore();
                         }
-                        canvas.Restore();
                     }
                 }
 
                 if (drawFill)
                 {
                     var fillRect = RectInsetForShape(perimeter, outlineWidth, vt, separatorWidth);
-                    var path = PerimeterPath(fillRect, outlineRadius - (drawOutline ? outlineWidth : 0));
-                    var fillPaint = new SKPaint
+                    using (var path = PerimeterPath(fillRect, outlineRadius - (drawOutline ? outlineWidth : 0)))
                     {
-                        Style = SKPaintStyle.Fill,
-                        Color = backgroundColor.ToSKColor(),
-                        IsAntialias = true,
-                    };
-                    try
-                    {
-                        canvas.DrawPath(path, fillPaint);
-                    }
-                    catch (Exception exception)
-                    {
-                        var properties = new Dictionary<string, string>
+                        using (var fillPaint = new SKPaint
+                        {
+                            Style = SKPaintStyle.Fill,
+                            Color = backgroundColor.ToSKColor(),
+                            IsAntialias = true
+                        })
+                        {
+                            try
+                            {
+                                canvas.DrawPath(path, fillPaint);
+                            }
+                            catch (Exception exception)
+                            {
+                                var properties = new Dictionary<string, string>
                             {
                                 { "class", "Forms9Patch.ExtendedShapeAndImageView" },
                                 { "method", "Paint" },
                                 { "line", "917" }
                             };
-                        //Microsoft.AppCenter.Crashes.Crashes.TrackError(exception, properties);
-                        Analytics.TrackException?.Invoke(exception, properties);
-                        _repainting = false;
-                        return;
+                                //Microsoft.AppCenter.Crashes.Crashes.TrackError(exception, properties);
+                                Analytics.TrackException?.Invoke(exception, properties);
+                                _repainting = false;
+                                return;
+                            }
+                        }
                     }
                 }
+
 
                 if (drawImage)
                 {
                     var imagePerimeter = perimeter;
                     if (drawFill)
                         imagePerimeter = RectInsetForShape(perimeter, outlineWidth, vt, separatorWidth);
-                    var path = PerimeterPath(imagePerimeter, outlineRadius - (drawOutline ? outlineWidth : 0));
-                    try
+                    using (var path = PerimeterPath(imagePerimeter, outlineRadius - (drawOutline ? outlineWidth : 0)))
                     {
-                        GenerateImageLayout(canvas, perimeter, path);
-                    }
-                    catch (Exception exception)
-                    {
-                        var properties = new Dictionary<string, string>
+                        try
+                        {
+                            GenerateImageLayout(canvas, perimeter, path);
+                        }
+                        catch (Exception exception)
+                        {
+                            var properties = new Dictionary<string, string>
                             {
                                 { "class", "Forms9Patch.ExtendedShapeAndImageView" },
                                 { "method", "Paint" },
                                 { "line", "941" }
                             };
-                        //Microsoft.AppCenter.Crashes.Crashes.TrackError(exception, properties);
-                        Analytics.TrackException?.Invoke(exception, properties);
-                        _repainting = false;
-                        return;
+                            //Microsoft.AppCenter.Crashes.Crashes.TrackError(exception, properties);
+                            Analytics.TrackException?.Invoke(exception, properties);
+                            _repainting = false;
+                            return;
+                        }
                     }
                 }
 
                 if (drawOutline)// && !drawImage)
                 {
-                    var outlinePaint = new SKPaint
+                    using (var outlinePaint = new SKPaint
                     {
                         Style = SKPaintStyle.Stroke,
                         Color = outlineColor.ToSKColor(),
                         StrokeWidth = outlineWidth,
-                        IsAntialias = true,
+                        IsAntialias = true
                         //StrokeJoin = SKStrokeJoin.Bevel
                         //PathEffect = SKPathEffect.CreateDash(new float[] { 20,20 }, 0)
-                    };
-                    var intPerimeter = new SKRect((int)perimeter.Left, (int)perimeter.Top, (int)perimeter.Right, (int)perimeter.Bottom);
-                    //System.Diagnostics.Debug.WriteLine("perimeter=[" + perimeter + "] [" + intPerimeter + "]");
-                    var outlineRect = RectInsetForShape(intPerimeter, outlineWidth / 2, vt, separatorWidth);
-                    var path = PerimeterPath(outlineRect, outlineRadius - (drawOutline ? outlineWidth / 2 : 0), true);
-                    try
+                    })
                     {
-                        canvas.DrawPath(path, outlinePaint);
-                    }
-                    catch (Exception exception)
-                    {
-                        var properties = new Dictionary<string, string>
+                        var intPerimeter = new SKRect((int)perimeter.Left, (int)perimeter.Top, (int)perimeter.Right, (int)perimeter.Bottom);
+                        //System.Diagnostics.Debug.WriteLine("perimeter=[" + perimeter + "] [" + intPerimeter + "]");
+                        var outlineRect = RectInsetForShape(intPerimeter, outlineWidth / 2, vt, separatorWidth);
+                        using (var path = PerimeterPath(outlineRect, outlineRadius - (drawOutline ? outlineWidth / 2 : 0), true))
+                        {
+                            try
+                            {
+                                canvas.DrawPath(path, outlinePaint);
+                            }
+                            catch (Exception exception)
+                            {
+                                var properties = new Dictionary<string, string>
                             {
                                 { "class", "Forms9Patch.ExtendedShapeAndImageView" },
                                 { "method", "Paint" },
                                 { "line", "974" }
                             };
-                        //Microsoft.AppCenter.Crashes.Crashes.TrackError(exception, properties);
-                        Analytics.TrackException?.Invoke(exception, properties);
-                        _repainting = false;
-                        return;
+                                //Microsoft.AppCenter.Crashes.Crashes.TrackError(exception, properties);
+                                Analytics.TrackException?.Invoke(exception, properties);
+                                _repainting = false;
+                                return;
+                            }
+                        }
                     }
-
                 }
 
 
@@ -1102,41 +1193,45 @@ namespace Forms9Patch
                 {
                     //System.Diagnostics.Debug.WriteLine("SeparatorColor: " + outlineColor.R + ", " + outlineColor.G + ", " + outlineColor.B + ", " + outlineColor.A);
                     //System.Diagnostics.Debug.WriteLine("SeparatorWidth: " + separatorWidth);
-                    var separatorPaint = new SKPaint
+                    using (var separatorPaint = new SKPaint
                     {
                         Style = SKPaintStyle.Stroke,
                         Color = outlineColor.ToSKColor(),
                         StrokeWidth = separatorWidth,
-                        IsAntialias = true,
+                        IsAntialias = true
                         //PathEffect = SKPathEffect.CreateDash(new float[] { 20,20 }, 0)
-                    };
-                    var path = new SKPath();
-                    if (vt)
+                    })
                     {
-                        path.MoveTo(perimeter.Left, perimeter.Top + outlineWidth / 2);
-                        path.LineTo(perimeter.Right, perimeter.Top + outlineWidth / 2);
-                    }
-                    else
-                    {
-                        path.MoveTo(perimeter.Left + outlineWidth / 2, perimeter.Top);
-                        path.LineTo(perimeter.Left + outlineWidth / 2, perimeter.Bottom);
-                    }
-                    try
-                    {
-                        canvas.DrawPath(path, separatorPaint);
-                    }
-                    catch (Exception exception)
-                    {
-                        var properties = new Dictionary<string, string>
+                        using (var path = new SKPath())
+                        {
+                            if (vt)
+                            {
+                                path.MoveTo(perimeter.Left, perimeter.Top + outlineWidth / 2);
+                                path.LineTo(perimeter.Right, perimeter.Top + outlineWidth / 2);
+                            }
+                            else
+                            {
+                                path.MoveTo(perimeter.Left + outlineWidth / 2, perimeter.Top);
+                                path.LineTo(perimeter.Left + outlineWidth / 2, perimeter.Bottom);
+                            }
+                            try
+                            {
+                                canvas.DrawPath(path, separatorPaint);
+                            }
+                            catch (Exception exception)
+                            {
+                                var properties = new Dictionary<string, string>
                             {
                                 { "class", "Forms9Patch.ExtendedShapeAndImageView" },
                                 { "method", "Paint" },
                                 { "line", "1017" }
                             };
-                        //Microsoft.AppCenter.Crashes.Crashes.TrackError(exception, properties);
-                        Analytics.TrackException?.Invoke(exception, properties);
-                        _repainting = false;
-                        return;
+                                //Microsoft.AppCenter.Crashes.Crashes.TrackError(exception, properties);
+                                Analytics.TrackException?.Invoke(exception, properties);
+                                _repainting = false;
+                                return;
+                            }
+                        }
                     }
                 }
 
@@ -1146,41 +1241,47 @@ namespace Forms9Patch
                     canvas.Save();
 
                     // setup the paint
-                    var insetShadowPaint = new SKPaint
+                    using (var insetShadowPaint = new SKPaint
                     {
                         Style = SKPaintStyle.Fill,
                         Color = shadowColor,
-                        IsAntialias = true,
-                    };
-                    var filter = SkiaSharp.SKImageFilter.CreateDropShadow(shadowX, shadowY, shadowR / 2, shadowR / 2, shadowColor, SKDropShadowImageFilterShadowMode.DrawShadowOnly);
-                    insetShadowPaint.ImageFilter = filter;
-
-                    // what is the mask?
-                    var maskPath = PerimeterPath(perimeter, outlineRadius);
-                    canvas.ClipPath(maskPath);
-
-                    // what is the path that will cast the shadow?
-                    // a) the button portion (which will be the hole in the larger outline, b)
-                    var shadowRect = InverseShadowInsetForShape(perimeter, vt);
-                    var path = PerimeterPath(shadowRect, outlineRadius);
-                    // b) add to it the larger outline 
-                    path.AddRect(RectInset(rect, -50));
-                    try
+                        IsAntialias = true
+                    })
                     {
-                        canvas.DrawPath(path, insetShadowPaint);
-                    }
-                    catch (Exception exception)
-                    {
-                        var properties = new Dictionary<string, string>
+                        //var filter = SKImageFilter.CreateDropShadow(shadowX, shadowY, shadowR / 2, shadowR / 2, shadowColor, SKDropShadowImageFilterShadowMode.DrawShadowOnly);
+                        var filter = SKImageFilter.CreateDropShadowOnly(shadowX, shadowY, shadowR / 2, shadowR / 2, shadowColor);
+                        insetShadowPaint.ImageFilter = filter;
+
+                        // what is the mask?
+                        using (var maskPath = PerimeterPath(perimeter, outlineRadius))
+                        {
+                            canvas.ClipPath(maskPath);
+
+                            // what is the path that will cast the shadow?
+                            // a) the button portion (which will be the hole in the larger outline, b)
+                            var shadowRect = InverseShadowInsetForShape(perimeter, vt);
+                            using (var path = PerimeterPath(shadowRect, outlineRadius))
+                            {
+                                // b) add to it the larger outline 
+                                path.AddRect(RectInset(rect, -50));
+                                try
+                                {
+                                    canvas.DrawPath(path, insetShadowPaint);
+                                }
+                                catch (Exception exception)
+                                {
+                                    var properties = new Dictionary<string, string>
                             {
                                 { "class", "Forms9Patch.ExtendedShapeAndImageView" },
                                 { "method", "Paint" },
                                 { "line", "917" }
                             };
-                        //Microsoft.AppCenter.Crashes.Crashes.TrackError(exception, properties);
-                        Analytics.TrackException?.Invoke(exception, properties);
+                                    //Microsoft.AppCenter.Crashes.Crashes.TrackError(exception, properties);
+                                    Analytics.TrackException?.Invoke(exception, properties);
+                                }
+                            }
+                        }
                     }
-
                     canvas.Restore();
                 }
             }
@@ -1195,19 +1296,22 @@ namespace Forms9Patch
         #region Image Layout
         void GenerateImageLayout(SKCanvas canvas, SKRect fillRect, SKPath clipPath, SKPaint shadowPaint = null)
         {
+            if (_f9pImageData == null || !_f9pImageData.ValidImage)
+                return;
+
+            SKCanvas shadowCanvas = null;
             SKBitmap shadowBitmap = null;
             var workingCanvas = canvas;
 
             if (shadowPaint != null)
             {
                 var x = canvas.DeviceClipBounds;
-                shadowBitmap = new SKBitmap((int)x.Width, (int)x.Height);
-                workingCanvas = new SKCanvas(shadowBitmap);
+                shadowBitmap = new SKBitmap(x.Width, x.Height);
+                shadowCanvas = new SKCanvas(shadowBitmap);
+                workingCanvas = shadowCanvas;
                 workingCanvas.Clear();
             }
 
-            if (_f9pImageData == null || !_f9pImageData.ValidImage)
-                return;
             if (_f9pImageData.ValidSVG)
             {
                 workingCanvas.Save();
@@ -1226,6 +1330,8 @@ namespace Forms9Patch
                                 workingCanvas.DrawPicture(_f9pImageData.SKSvg.Picture);
                             }
                         workingCanvas.Restore();
+                        if (shadowCanvas != workingCanvas)
+                            shadowCanvas?.Dispose();
                         return;
                     }
                 }
@@ -1264,10 +1370,10 @@ namespace Forms9Patch
                 {
                     switch (HorizontalOptions.Alignment)
                     {
-                        case Xamarin.Forms.LayoutAlignment.Start:
+                        case LayoutAlignment.Start:
                             left = 0;
                             break;
-                        case Xamarin.Forms.LayoutAlignment.End:
+                        case LayoutAlignment.End:
                             left = (float)(fillRect.Width - scaledWidth);
                             break;
                         default:
@@ -1276,10 +1382,10 @@ namespace Forms9Patch
                     }
                     switch (VerticalOptions.Alignment)
                     {
-                        case Xamarin.Forms.LayoutAlignment.Start:
+                        case LayoutAlignment.Start:
                             top = 0;
                             break;
-                        case Xamarin.Forms.LayoutAlignment.End:
+                        case LayoutAlignment.End:
                             top = (float)(fillRect.Height - scaledHeight);
                             break;
                         default:
@@ -1291,22 +1397,15 @@ namespace Forms9Patch
                 workingCanvas.Translate(left + (float)shadowPadding.Left, top + (float)shadowPadding.Top);
                 workingCanvas.Scale((float)scaleX, (float)scaleY);
                 SKPaint paint = null;
-                if (shadowPaint == null && TintColor != Xamarin.Forms.Color.Default && TintColor != Xamarin.Forms.Color.Transparent)
+                if (shadowPaint == null && TintColor != Color.Default && TintColor != Color.Transparent)
                 {
-                    var mx = new Single[]
-                    {
-                        0, 0, 0, 0, TintColor.ByteR(),
-                        0, 0, 0, 0, TintColor.ByteG(),
-                        0, 0, 0, 0, TintColor.ByteB(),
-                        0, 0, 0, (float)(TintColor.A * Opacity), 0
-                    };
-                    var cf = SKColorFilter.CreateColorMatrix(mx);
-
+                    var color = new SKColor(TintColor.ByteR(), TintColor.ByteG(), TintColor.ByteB(), TintColor.ByteA());
+                    var cf = SKColorFilter.CreateBlendMode(color, SKBlendMode.SrcIn);
 
                     paint = new SKPaint
                     {
                         ColorFilter = cf,
-                        IsAntialias = true,
+                        IsAntialias = true
                     };
                 }
                 else if (Opacity < 1.0)
@@ -1315,7 +1414,6 @@ namespace Forms9Patch
                     paint = new SKPaint { ColorFilter = SKColorFilter.CreateBlendMode(transparency, SKBlendMode.DstIn) };
                 }
                 workingCanvas.DrawPicture(_f9pImageData.SKSvg.Picture, paint);
-                //workingCanvas.DrawPicture(_f9pImageData.SKSvg.Picture);
                 workingCanvas.Restore();
             }
             else if (_f9pImageData.ValidBitmap)
@@ -1341,13 +1439,13 @@ namespace Forms9Patch
 
                 //var bitmap = _f9pImageData;
                 SKPaint paint = null;
-                if (shadowPaint == null && TintColor != Xamarin.Forms.Color.Default && TintColor != Xamarin.Forms.Color.Transparent)
+                if (shadowPaint == null && TintColor != Color.Default && TintColor != Color.Transparent)
                 {
-                    var mx = new Single[]
+                    var mx = new[]
                     {
-                        0, 0, 0, 0, TintColor.ByteR(),
-                        0, 0, 0, 0, TintColor.ByteG(),
-                        0, 0, 0, 0, TintColor.ByteB(),
+                        0, 0, 0, 0, (float)TintColor.R,
+                        0, 0, 0, 0, (float)TintColor.G,
+                        0, 0, 0, 0, (float)TintColor.B,
                         0, 0, 0, (float)(TintColor.A * Opacity), 0
                     };
                     var cf = SKColorFilter.CreateColorMatrix(mx);
@@ -1356,7 +1454,7 @@ namespace Forms9Patch
                     paint = new SKPaint
                     {
                         ColorFilter = cf,
-                        IsAntialias = true,
+                        IsAntialias = true
                     };
                 }
                 else if (Opacity < 1.0)
@@ -1392,10 +1490,10 @@ namespace Forms9Patch
                         float left;
                         switch (HorizontalOptions.Alignment)
                         {
-                            case Xamarin.Forms.LayoutAlignment.Start:
+                            case LayoutAlignment.Start:
                                 left = 0;
                                 break;
-                            case Xamarin.Forms.LayoutAlignment.End:
+                            case LayoutAlignment.End:
                                 left = (float)(SourceImageWidth - croppedWidth);
                                 break;
                             default:
@@ -1405,10 +1503,10 @@ namespace Forms9Patch
                         float top;
                         switch (VerticalOptions.Alignment)
                         {
-                            case Xamarin.Forms.LayoutAlignment.Start:
+                            case LayoutAlignment.Start:
                                 top = 0;
                                 break;
-                            case Xamarin.Forms.LayoutAlignment.End:
+                            case LayoutAlignment.End:
                                 top = (float)(SourceImageHeight - croppedHeight);
                                 break;
                             default:
@@ -1483,8 +1581,8 @@ namespace Forms9Patch
                                 : ypatch.Width * (ypatch.Stretchable ? 0 : yScale);
                             if (xPatchWidth > 0 && yPatchWidth > 0)
                             {
-                                var sourceRect = new SKRect((float)System.Math.Max(0, xpatch.Start), (float)System.Math.Max(0, ypatch.Start), (float)System.Math.Min(xpatch.Start + xpatch.Width, SourceImageWidth), (float)System.Math.Min(ypatch.Start + ypatch.Width, SourceImageHeight));
-                                var destRect = new SKRect((float)System.Math.Max(0, patchX), (float)System.Math.Max(0, patchY), Math.Min(patchX + xPatchWidth, fillRect.Width + (float)shadowPadding.Left), Math.Min(patchY + yPatchWidth, fillRect.Height + (float)shadowPadding.Top));
+                                var sourceRect = new SKRect(Math.Max(0, xpatch.Start), Math.Max(0, ypatch.Start), (float)Math.Min(xpatch.Start + xpatch.Width, SourceImageWidth), (float)Math.Min(ypatch.Start + ypatch.Width, SourceImageHeight));
+                                var destRect = new SKRect(Math.Max(0, patchX), Math.Max(0, patchY), Math.Min(patchX + xPatchWidth, fillRect.Width + (float)shadowPadding.Left), Math.Min(patchY + yPatchWidth, fillRect.Height + (float)shadowPadding.Top));
                                 workingCanvas.DrawBitmap(_f9pImageData.SKBitmap, sourceRect, destRect, paint);
                             }
                             patchY += yPatchWidth;
@@ -1500,14 +1598,15 @@ namespace Forms9Patch
                 workingCanvas.Restore();
 
                 if (shadowPaint != null)
-                {
-                    paint = shadowPaint;
-                    canvas.DrawBitmap(shadowBitmap, shadowBitmap.Info.Rect, paint);
-                    workingCanvas.Dispose();
-                }
+                    canvas.DrawBitmap(shadowBitmap, shadowBitmap.Info.Rect, shadowPaint);
+
+                paint?.Dispose();
             }
             else
                 Console.WriteLine("Image [" + _f9pImageData.Key + "] is neither a valid SVG or valid Bitmap.");
+
+            if (shadowCanvas != workingCanvas)
+                shadowCanvas?.Dispose();
         }
         #endregion
 
@@ -1608,7 +1707,7 @@ namespace Forms9Patch
             if (IsBubble && this is IBubbleShape bubble && bubble.PointerDirection != PointerDirection.None)
                 return BubblePerimeterPath(bubble, rect, radius);
 
-            var orientation = !IsSegment ? Xamarin.Forms.StackOrientation.Horizontal : ((IExtendedShape)this).ExtendedElementShapeOrientation;
+            var orientation = !IsSegment ? StackOrientation.Horizontal : ((IExtendedShape)this).ExtendedElementShapeOrientation;
 
             var path = new SKPath();
 
@@ -1659,7 +1758,7 @@ namespace Forms9Patch
                     break;
                 case ExtendedElementShape.SegmentStart:
                     {
-                        if (orientation == Xamarin.Forms.StackOrientation.Horizontal)
+                        if (orientation == StackOrientation.Horizontal)
                         {
                             path.MoveTo(rect.Right, rect.Top);
                             path.LineTo(rect.Left + radius, rect.Top);
@@ -1690,7 +1789,7 @@ namespace Forms9Patch
                     break;
                 case ExtendedElementShape.SegmentMid:
                     {
-                        if (orientation == Xamarin.Forms.StackOrientation.Horizontal)
+                        if (orientation == StackOrientation.Horizontal)
                         {
                             path.MoveTo(rect.Right, rect.Top);
                             path.LineTo(rect.Left, rect.Top);
@@ -1718,7 +1817,7 @@ namespace Forms9Patch
                     break;
                 case ExtendedElementShape.SegmentEnd:
                     {
-                        if (orientation == Xamarin.Forms.StackOrientation.Horizontal)
+                        if (orientation == StackOrientation.Horizontal)
                         {
                             //path.MoveTo((rect.Left + rect.Right) / 2, rect.Top);
                             //path.LineTo(rect.Left, rect.Top);
@@ -2116,6 +2215,9 @@ namespace Forms9Patch
             }
             return result;
         }
+
+        bool IImageController.GetLoadAsAnimation() => false;
+
 
         #endregion
 

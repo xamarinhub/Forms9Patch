@@ -2,6 +2,7 @@
 using SkiaSharp;
 using System.IO;
 using Xamarin.Forms;
+using P42.Utils;
 
 namespace Forms9Patch
 {
@@ -14,10 +15,10 @@ namespace Forms9Patch
 
         public SkiaSharp.Extended.Svg.SKSvg SKSvg { get; private set; }
 
-        double _width;
+        readonly double _width;
         public double Width => _width;
 
-        double _height;
+        readonly double _height;
         public double Height => _height;
 
         public bool ValidBitmap => SKBitmap != null && _width > 0 && _height > 0;
@@ -78,7 +79,7 @@ namespace Forms9Patch
                         {
                             skSvg.Load(memoryStream);
                         }
-                        catch(Exception)
+                        catch (Exception)
                         {
                             Console.WriteLine("Failed to load SkiaSvg memory stream.  Key=[" + key + "]");
                             return null;
@@ -180,13 +181,18 @@ namespace Forms9Patch
             if (!_disposed && disposing)
             {
                 _disposed = true;
-                SKBitmap?.Dispose();
+                // Don't do this ... other Images may need it!
+                //SKBitmap?.Dispose();
                 SKBitmap = null;
             }
         }
 
         // This code added to correctly implement the disposable pattern.
-        public void Dispose() => Dispose(true);
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
         #endregion
 
 

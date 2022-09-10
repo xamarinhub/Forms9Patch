@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
@@ -7,13 +7,16 @@ using System.Threading.Tasks;
 using Xamarin.Forms;
 using FormsGestures;
 using P42.NumericalMethods;
+using System.Linq;
 
 namespace Forms9Patch
 {
     /// <summary>
     /// Enable EmbeddedResource fonts to be used with Xamarin elements
     /// </summary>
-    internal class EnhancedListView : Xamarin.Forms.ListView, IScrollView
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
+    internal class EnhancedListView : Xamarin.Forms.ListView, IScrollView, IDisposable
     {
         #region Properties
 
@@ -55,7 +58,7 @@ namespace Forms9Patch
         }
 
         bool _isScrolling;
-        DateTime _lastScrolling = DateTime.MinValue;
+        DateTime _lastScrolling = DateTime.MinValue.AddYears(1);
         public bool IsScrolling
         {
             get
@@ -79,21 +82,58 @@ namespace Forms9Patch
 
         #region Events
         public event EventHandler Scrolling;
-        public event EventHandler Scrolled;
+        public new event EventHandler Scrolled;
         #endregion
 
 
-        #region Constructors
+        #region Constructors / Disposer
         /// <summary>
         /// Constructor for Forms9Patch.EnhancedListView
         /// </summary>
-        public EnhancedListView() : base() { }
+        public EnhancedListView()
+        {
+        }
 
         /// <summary>
         /// Constructor for Forms9Patch.EnhancedListView
         /// </summary>
         /// <param name="cachingStrategy"></param>
-        public EnhancedListView(ListViewCachingStrategy cachingStrategy) : base(cachingStrategy) { }
+        public EnhancedListView(ListViewCachingStrategy cachingStrategy) : base(cachingStrategy)
+        {
+        }
+
+        private bool _disposed;
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    _disposed = true;
+
+                    Scrolling = null;
+                    //Scrolled = null;
+
+                    var items = TemplatedItems.ToArray();
+
+                    foreach (var item in items)
+                        if (item is IDisposable disposable)
+                        {
+                            item.BindingContext = null;
+                            disposable.Dispose();
+                        }
+                }
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+
         #endregion
 
 
@@ -155,7 +195,7 @@ namespace Forms9Patch
             Scrolling?.Invoke(this, args);
             //System.Diagnostics.Debug.WriteLine("EnhancedListView.OnScrolling: offset=[" + ScrollOffset + "]");
         }
-
+        
         internal void OnScrolled(object sender, EventArgs args)
         {
             //Listener.CancelActiveGestures();  // this breaks UWP listview scrolling!!!
@@ -164,6 +204,9 @@ namespace Forms9Patch
             Scrolled?.Invoke(this, args);
             //System.Diagnostics.Debug.WriteLine("EnhancedListView.OnScrolled: offset=[" + ScrollOffset + "]");
         }
+        
+
+
         #endregion
     }
 

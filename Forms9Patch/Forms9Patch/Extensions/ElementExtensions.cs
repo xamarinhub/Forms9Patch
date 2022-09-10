@@ -58,6 +58,36 @@ namespace Forms9Patch
         {
             e.SetPropertyValue(nameof(IsInNativeLayout), value);
         }
-    }
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+
+
+        static Interfaces.IRendererResolver _rendererResolver;
+        static Interfaces.IRendererResolver RendererResolver
+        {
+            get
+            {
+                if (_rendererResolver is null)
+                    _rendererResolver = DependencyService.Resolve<Interfaces.IRendererResolver>();
+                return _rendererResolver;
+            }
+        }
+
+        /// <summary>
+        /// Returns platform renderer for VisualElement (or null)
+        /// </summary>
+        /// <param name="element"></param>
+        /// <returns></returns>
+        public static object GetRenderer(this VisualElement element)
+            => RendererResolver?.GetRenderer(element);
+
+        /// <summary>
+        /// Tests if VisualElement has a Xamarin.Forms platform renderer attached
+        /// </summary>
+        /// <param name="element"></param>
+        /// <returns></returns>
+        public static bool HasRenderer(this VisualElement element)
+            => GetRenderer(element) != null;
+    }
+
+
 }

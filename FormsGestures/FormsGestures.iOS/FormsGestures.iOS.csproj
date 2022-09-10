@@ -22,6 +22,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <ConsolePause>false</ConsolePause>
+    <MtouchLink>SdkOnly</MtouchLink>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>full</DebugType>
@@ -30,6 +31,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <ConsolePause>false</ConsolePause>
+    <MtouchLink>SdkOnly</MtouchLink>
   </PropertyGroup>
   <!-- System References -->
   <ItemGroup>
@@ -42,7 +44,7 @@
   <!-- NuGet Packages -->
   <ItemGroup>
     <PackageReference Include="Xamarin.Forms">
-      <Version>4.0.0.497661</Version>
+      <Version>5.0.0.2337</Version>
     </PackageReference>
   </ItemGroup>
   <!-- Files -->
@@ -63,15 +65,16 @@
     <Compile Include="Services\GestureService.cs" />
     <Compile Include="Services\LocationService.cs" />
     <Compile Include="Settings.cs" />
+    <Compile Include="Extensions\UIViewExtensions.cs" />
   </ItemGroup>
   <!-- XF Nuget Project References -->
   <ItemGroup>
     <ProjectReference Include="..\FormsGestures\FormsGestures.csproj">
-      <Project>{2079B099-964B-4CFF-8EF6-9443B462258A}</Project>
+      <Project>{D8C279AA-DEC5-46C7-A2D5-32C497190924}</Project>
       <Name>FormsGestures</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\P42.Utils\P42.Utils\P42.Utils.csproj">
-      <Project>{A519F4E6-541B-4E7B-A700-6C2BB2019FE6}</Project>
+      <Project>{8A733CD3-9F71-4B04-9DEB-738B292941FC}</Project>
       <Name>P42.Utils</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\P42.Utils\P42.Utils.iOS\P42.Utils.iOS.csproj">
@@ -82,5 +85,8 @@
     </ProjectReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="Info.plist" />
+  </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets" />
 </Project>

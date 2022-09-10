@@ -2,12 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Xamarin.Forms;
+using System.ComponentModel;
 
 namespace Forms9Patch
 {
     /// <summary>
     /// Required to enable Hardware Key Listening capability
     /// </summary>
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     public class HardwareKeyPage : ContentPage
     {
         #region static implementation
@@ -35,7 +38,7 @@ namespace Forms9Patch
         }
 
         //static Timer _falseFocusTimer=null;
-        static DateTime _lastFocusChangedDateTime = DateTime.MinValue;
+        static DateTime _lastFocusChangedDateTime = DateTime.MinValue.AddYears(1);
         static void OnFocusMonitorFocusedElementChanged(object wasElement, VisualElement currentElement)
         {
             //System.Diagnostics.Debug.WriteLine("Forms9Patch.HardwareKeyPage.OnFocusElementChanged (" + wasElement + ", " + currentElement + ") ");

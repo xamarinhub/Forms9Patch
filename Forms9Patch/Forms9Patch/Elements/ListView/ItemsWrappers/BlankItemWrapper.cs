@@ -1,10 +1,13 @@
 ﻿using Xamarin.Forms;
+using System.ComponentModel;
 
 namespace Forms9Patch
 {
-	class BlankItemWrapper : ItemWrapper
-	{
-	}
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
+    class BlankItemWrapper : ItemWrapper
+    {
+    }
 
 
 }

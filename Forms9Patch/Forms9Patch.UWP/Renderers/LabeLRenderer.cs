@@ -14,7 +14,7 @@ namespace Forms9Patch.UWP
     {
         #region Debug support
         bool DebugCondition
-            => P42.Utils.Debug.ConditionFunc?.Invoke(Element) ?? false;
+            => P42.Utils.DebugExtensions.ConditionFunc?.Invoke(Element) ?? false;
         #endregion
 
 
@@ -98,6 +98,8 @@ namespace Forms9Patch.UWP
                 Control?.UpdateLineBreakMode(Element);
             else if (e.PropertyName == Forms9Patch.Label.HorizontalTextAlignmentProperty.PropertyName)
                 UpdateHorizontalAlign(Control);
+            else if (e.PropertyName == Xamarin.Forms.Label.LineHeightProperty.PropertyName)
+                UpdateLineHeight(Control);
             #endregion
 
             base.OnElementPropertyChanged(sender, e);
@@ -133,6 +135,15 @@ namespace Forms9Patch.UWP
 			}
 		}
 
+
+        void UpdateLineHeight(TextBlock control)
+        {
+            if (control == null)
+                return;
+            if (Element.LineHeight >= 0)
+                control.LineHeight = Element.LineHeight * control.FontSize;
+            ForceLayout();
+        }
 
         void UpdateSynchrnoizedFontSize(TextBlock control)
         {
@@ -170,10 +181,15 @@ namespace Forms9Patch.UWP
 
         public override SizeRequest GetDesiredSize(double widthConstraint, double heightConstraint)
         {
-            var desiredSize = InternalMeasure(new Windows.Foundation.Size(widthConstraint, heightConstraint));
-            var minSize = new Xamarin.Forms.Size(10, Element != null ? _fontMetrics.LineHeightForFontSize(Element.DecipheredMinFontSize()) : 10);
-            var result = new SizeRequest(new Xamarin.Forms.Size(desiredSize.Width, desiredSize.Height), minSize);
-            return result;
+            if (Control is TextBlock control)
+            {
+                _fontMetrics = control.GetFontMetrics();
+                var desiredSize = InternalMeasure(new Windows.Foundation.Size(widthConstraint, heightConstraint));
+                var minSize = new Xamarin.Forms.Size(10, Element != null ? _fontMetrics.LineHeightForFontSize(Element.DecipheredMinFontSize()) : 10);
+                var result = new SizeRequest(new Xamarin.Forms.Size(desiredSize.Width, desiredSize.Height), minSize);
+                return result;
+            }
+            return new SizeRequest(Size.Zero);
         }
         #endregion
 
@@ -209,7 +225,7 @@ namespace Forms9Patch.UWP
                         break;
                     default:
                     case Xamarin.Forms.TextAlignment.Center:
-                        rect.Y = (int)((finalSize.Height - childHeight) / 2);
+                        rect.Y = (int)((finalSize.Height - childHeight) / 2) - control.FontSize / 10;
                         break;
                     case Xamarin.Forms.TextAlignment.End:
                         rect.Y = finalSize.Height - childHeight;
@@ -405,14 +421,13 @@ namespace Forms9Patch.UWP
         #endregion
 
 
-
         #region Fitting
 
         Size LabelF9PSize(double widthConstraint, double fontSize)
         {
             if (Element is Forms9Patch.Label element && Control?.Copy() is TextBlock control)
             {
-                //P42.Utils.Debug.Message(element,"ENTER widthConstraint=[" + widthConstraint + "] fontSize=[" + fontSize + "]");
+                //P42.Utils.DebugExtensions.Message(element,"ENTER widthConstraint=[" + widthConstraint + "] fontSize=[" + fontSize + "]");
 
                 control.SetAndFormatText(element, fontSize);
                 control.Measure(new Windows.Foundation.Size(widthConstraint, double.PositiveInfinity));
@@ -420,7 +435,7 @@ namespace Forms9Patch.UWP
                 var size = new Windows.Foundation.Size(control.DesiredSize.Width, control.DesiredSize.Height);
 
                 var result = new Size(size.Width, size.Height);
-                //P42.Utils.Debug.Message(element,"EXIT result=[" + result + "]");
+                //P42.Utils.DebugExtensions.Message(element,"EXIT result=[" + result + "]");
                 return result;
             }
             return new Size(10, 10);

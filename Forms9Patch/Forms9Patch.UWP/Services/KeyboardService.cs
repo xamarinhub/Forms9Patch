@@ -12,99 +12,105 @@ using Windows.UI.ViewManagement;
 [assembly: Xamarin.Forms.Dependency(typeof(Forms9Patch.UWP.KeyboardService))]
 namespace Forms9Patch.UWP
 {
-    class KeyboardService : IKeyboardService, IDisposable
-    {
-        public bool IsHardwareKeyboardActive
-        {
-            get
-            {
-                var keyboardCapabilities = new Windows.Devices.Input.KeyboardCapabilities();
-                return keyboardCapabilities.KeyboardPresent != 0;
-            }
-        }
+	[Xamarin.Forms.Internals.Preserve(AllMembers = true)]
+	class KeyboardService : IKeyboardService, IDisposable
+	{
+		public bool IsHardwareKeyboardActive
+		{
+			get
+			{
+				var keyboardCapabilities = new Windows.Devices.Input.KeyboardCapabilities();
+				return keyboardCapabilities.KeyboardPresent != 0;
+			}
+		}
 
-        Windows.Graphics.Display.DisplayInformation _displayInformation;
+		Windows.Graphics.Display.DisplayInformation _displayInformation;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="T:Forms9Patch.iOS.KeyboardService"/> class.
-        /// </summary>
-        public KeyboardService()
-        {
-            InputPane.GetForCurrentView().Hiding += KeyboardService_Hiding;
-            InputPane.GetForCurrentView().Showing += KeyboardService_Showing;
-        }
+		/// <summary>
+		/// Initializes a new instance of the <see cref="T:Forms9Patch.iOS.KeyboardService"/> class.
+		/// </summary>
+		public KeyboardService()
+		{
+			P42.Utils.DebugExtensions.AddToCensus(this);
 
-        private void OnOrienationChanged(DisplayInformation sender, object args)
-        {
-            Height = InputPane.GetForCurrentView().OccludedRect.Height;
-        }
+			InputPane.GetForCurrentView().Hiding += KeyboardService_Hiding;
+			InputPane.GetForCurrentView().Showing += KeyboardService_Showing;
+		}
 
-        private void KeyboardService_Showing(InputPane sender, InputPaneVisibilityEventArgs args)
-        {
-            Forms9Patch.KeyboardService.OnVisiblityChange(KeyboardVisibilityChange.Shown);
-            Height = InputPane.GetForCurrentView().OccludedRect.Height;
-            _displayInformation = Windows.Graphics.Display.DisplayInformation.GetForCurrentView();
-            _displayInformation.OrientationChanged += OnOrienationChanged;
-        }
+		private void OnOrienationChanged(DisplayInformation sender, object args)
+		{
+			Height = InputPane.GetForCurrentView().OccludedRect.Height;
+		}
 
-        private void KeyboardService_Hiding(InputPane sender, InputPaneVisibilityEventArgs args)
-        {
-            Forms9Patch.KeyboardService.OnVisiblityChange(KeyboardVisibilityChange.Hidden);
-            Height = InputPane.GetForCurrentView().OccludedRect.Height;
-            if (_displayInformation!=null)
-                _displayInformation.OrientationChanged -= OnOrienationChanged;
-        }
+		private void KeyboardService_Showing(InputPane sender, InputPaneVisibilityEventArgs args)
+		{
+			Forms9Patch.KeyboardService.OnVisiblityChange(KeyboardVisibilityChange.Shown);
+			Height = InputPane.GetForCurrentView().OccludedRect.Height;
+			_displayInformation = Windows.Graphics.Display.DisplayInformation.GetForCurrentView();
+			_displayInformation.OrientationChanged += OnOrienationChanged;
+		}
 
-        /// <summary>
-        /// Hide this instance.
-        /// </summary>
-        public void Hide()
-        {
-            InputPane.GetForCurrentView().TryHide();
-        }
+		private void KeyboardService_Hiding(InputPane sender, InputPaneVisibilityEventArgs args)
+		{
+			Forms9Patch.KeyboardService.OnVisiblityChange(KeyboardVisibilityChange.Hidden);
+			Height = InputPane.GetForCurrentView().OccludedRect.Height;
+			if (_displayInformation != null)
+				_displayInformation.OrientationChanged -= OnOrienationChanged;
+		}
 
-        public string LanguageRegion
-        {
-            get
-            {
-                return Windows.Globalization.Language.CurrentInputMethodLanguageTag;
-            }
-        }
+		/// <summary>
+		/// Hide this instance.
+		/// </summary>
+		public void Hide()
+		{
+			InputPane.GetForCurrentView().TryHide();
+		}
 
-        double _height;
-        public double Height
-        {
-            get => _height;
-            set
-            {
-                if (_height!=value)
-                {
-                    _height = value;
-                    Forms9Patch.KeyboardService.OnHeightChanged(_height);
-                }
-            }
-        }
+		public string LanguageRegion
+		{
+			get
+			{
+				return Windows.Globalization.Language.CurrentInputMethodLanguageTag;
+			}
+		}
 
-        #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue && disposing)
-            {
-                disposedValue = true;
-                if (_displayInformation!=null)
-                {
-                    _displayInformation.OrientationChanged -= OnOrienationChanged;
-                    _displayInformation = null;
-                }
-            }
-        }
+		double _height;
+		public double Height
+		{
+			get => _height;
+			set
+			{
+				if (_height != value)
+				{
+					_height = value;
+					Forms9Patch.KeyboardService.OnHeightChanged(_height);
+				}
+			}
+		}
 
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-        #endregion
-    }
+		#region IDisposable Support
+		private bool _disposed = false; // To detect redundant calls
+		protected virtual void Dispose(bool disposing)
+		{
+			if (!_disposed && disposing)
+			{
+				_disposed = true;
+				if (_displayInformation != null)
+				{
+					_displayInformation.OrientationChanged -= OnOrienationChanged;
+					_displayInformation = null;
+				}
+
+				P42.Utils.DebugExtensions.AddToCensus(this);
+
+			}
+		}
+
+		public void Dispose()
+		{
+			Dispose(true);
+			GC.SuppressFinalize(this);
+		}
+		#endregion
+	}
 }

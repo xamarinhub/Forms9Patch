@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using Xamarin.Forms;
 
 namespace Forms9Patch
@@ -11,6 +7,8 @@ namespace Forms9Patch
     /// <summary>
     /// Enable EmbeddedResource fonts to be used with Xamarin elements
     /// </summary>
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     public class EmbeddedResourceFontEffect : Xamarin.Forms.RoutingEffect
     {
         static EmbeddedResourceFontEffect()

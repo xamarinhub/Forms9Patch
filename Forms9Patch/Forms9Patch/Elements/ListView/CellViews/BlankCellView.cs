@@ -1,10 +1,13 @@
 ﻿using Xamarin.Forms;
+using System.ComponentModel;
 
 namespace Forms9Patch
 {
     /// <summary>
     /// DO NOT USE: Used by Forms9Patch.ListView as a placeholder for a cell when being dragged
     /// </summary>
+    [DesignTimeVisible(true)]
+    [Xamarin.Forms.Internals.Preserve(AllMembers = true)]
     class BlankCellView : BaseCellView
     {
         readonly BoxView _boxView = new BoxView
@@ -28,18 +31,13 @@ namespace Forms9Patch
         /// <param name="propertyName">Property name.</param>
         protected override void OnPropertyChanged(string propertyName = null)
         {
-            if (!P42.Utils.Environment.IsOnMainThread)
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
             {
-                Device.BeginInvokeOnMainThread(() => OnPropertyChanged(propertyName));
-                return;
-            }
+                base.OnPropertyChanged(propertyName);
 
-            base.OnPropertyChanged(propertyName);
-
-            if (propertyName == HeightRequestProperty.PropertyName)
-            {
-                _boxView.HeightRequest = HeightRequest;
-            }
+                if (propertyName == HeightRequestProperty.PropertyName)
+                    _boxView.HeightRequest = HeightRequest;
+            });
         }
     }
 

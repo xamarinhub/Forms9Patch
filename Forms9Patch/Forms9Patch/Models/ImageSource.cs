@@ -2,12 +2,19 @@
 using System.Collections.Generic;
 using System.Reflection;
 using Xamarin.Forms;
+using System.ComponentModel;
+using System.Text;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Forms9Patch
 {
     /// <summary>
     /// Forms9Patch ImageSource.
     /// </summary>
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     public class ImageSource : Xamarin.Forms.ImageSource
     {
         internal static readonly BindableProperty ImageScaleProperty = BindableProperty.CreateAttached("ImageScale", typeof(float), typeof(ImageSource), 1.0f);
@@ -44,6 +51,18 @@ namespace Forms9Patch
 
         #region Static Methods
         /// <summary>
+        /// Use a SVG string as a image source for a Forms9Patch image
+        /// </summary>
+        /// <param name="svgText"></param>
+        /// <returns></returns>
+        public static Xamarin.Forms.ImageSource FromSvgText(string svgText)
+        {
+            byte[] byteArray = Encoding.ASCII.GetBytes(svgText);
+            var stream = new MemoryStream(byteArray);
+            return FromStream(() => stream);
+        }
+
+        /// <summary>
         /// Cached selection of best fit multi-device / multi-resolution image embedded resource 
         /// </summary>
         /// <returns>Xamarin.Forms.ImageSource</returns>
@@ -51,7 +70,8 @@ namespace Forms9Patch
         /// <param name="assembly">Assembly in which the resource can be found</param> 
         public static Xamarin.Forms.ImageSource FromMultiResource(string resourceId, Assembly assembly = null)
         {
-            assembly = EmbeddedResourceExtensions.FindAssemblyForMultiResource(resourceId, assembly);
+            if (assembly is null || assembly == typeof(Xamarin.Forms.Grid).Assembly)
+                assembly = EmbeddedResourceExtensions.FindAssemblyForMultiResource(resourceId, assembly);
             /*
             assembly = assembly ?? AssemblyExtensions.AssemblyFromResourceId(resourceId);
             if (assembly == null && Device.RuntimePlatform != Device.UWP)
@@ -164,11 +184,11 @@ namespace Forms9Patch
 			return imageSource;
 		}
 		*/
-            #endregion
+        #endregion
 
 
-            #region Path Parsing 
-            static Tuple<string, string> GetiOSBasePathAndExt(string pathString)
+        #region Path Parsing 
+        static Tuple<string, string> GetiOSBasePathAndExt(string pathString)
         {
             if (pathString == null)
                 return null;
@@ -229,7 +249,8 @@ namespace Forms9Patch
 
         internal static string BestEmbeddedMultiResourceMatch(string resourceId, Assembly assembly)
         {
-            assembly = EmbeddedResourceExtensions.FindAssemblyForMultiResource(resourceId, assembly);
+            if (assembly is null || assembly == typeof(Xamarin.Forms.Grid).Assembly)
+                assembly = EmbeddedResourceExtensions.FindAssemblyForMultiResource(resourceId, assembly);
             /*
             assembly = assembly ?? AssemblyExtensions.AssemblyFromResourceId(resourceId);
             if (assembly == null && Device.RuntimePlatform != Device.UWP)
@@ -251,7 +272,7 @@ namespace Forms9Patch
             return result;
         }
 
-        static Dictionary<Assembly, string[]> SortedAppleResources = new Dictionary<Assembly, string[]>();
+        readonly static Dictionary<Assembly, string[]> SortedAppleResources = new Dictionary<Assembly, string[]>();
         static ImageSourceContainer BestGuessF9PResource(string reqResourcePathString, Assembly assembly)
         {
             if (assembly == null)
@@ -315,7 +336,7 @@ namespace Forms9Patch
 
 
         #region Path Resolution Support
-        static List<string> ValidImageExtensions = new List<string> {
+        readonly static List<string> ValidImageExtensions = new List<string> {
 			// these extensions can be turned into Image file on all three platforms
 			"jpg", "jpeg", "gif", "png", "bmp", "bmpf", "svg"
         };

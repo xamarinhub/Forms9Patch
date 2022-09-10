@@ -5,6 +5,9 @@ using Dalvik.SystemInterop;
 using System.Reflection;
 using System.Collections.Generic;
 using Android.Content.PM;
+using Forms9Patch.Elements.Popups.Core;
+using Xamarin.Forms;
+using System.Linq;
 
 [assembly: Xamarin.Forms.Dependency(typeof(Forms9Patch.Droid.Settings))]
 namespace Forms9Patch.Droid
@@ -12,6 +15,7 @@ namespace Forms9Patch.Droid
     /// <summary>
     /// Forms9Patch Settings.
     /// </summary>
+    [Preserve(AllMembers = true)]
     public class Settings : ISettings
     {
         #region Properties
@@ -34,60 +38,83 @@ namespace Forms9Patch.Droid
 
         public List<Assembly> IncludedAssemblies => throw new NotImplementedException();
 
+        internal static bool IsInitialized { get; private set; }
+
+        #endregion
+
+
+        #region Events
+        internal static event EventHandler OnInitialized;
         #endregion
 
 
         #region Initialization
         public static void Initialize(Android.App.Activity activity, string licenseKey = null)
         {
-            /*
-            int minSdkVersion = 0;
-            PackageManager manager = activity.PackageManager; //AppGlobals.getPackageManager();
-            try
-            {
-
-                ApplicationInfo applicationInfo = manager.GetApplicationInfo(activity.PackageName, 0); // manager.getApplicationInfo(appName, 0);
-                if (applicationInfo != null)
-                {
-                    minSdkVersion = applicationInfo.MinSdkVersion;
-                }
-            }
-            catch (Exception) { }
-
-            //if (Android.OS.Build.VERSION.SdkInt <= Android.OS.BuildVersionCodes.M)
-            if (minSdkVersion <= (int)Android.OS.BuildVersionCodes.M)
-                throw new Exception("Forms9Patch requires a minSdkVersion of Android API 24 or higher.  If this is an issue, please fix the Android LabelRenderer and submit a pull request.  Note that there are edge cases that took weeks to address.");
-                */
-            _initizalized = true;
             Activity = activity;
-            Context = activity as Android.Content.Context;
-            // these don't work because we get the notification AFTER Xamarin did ... and it runs through all of the subscribers anyway.
-            //Xamarin.Forms.Platform.Android.FormsAppCompatActivity.BackPressed += OnBackPressed;
-            //Xamarin.Forms.Platform.Android.FormsApplicationActivity.BackPressed += OnBackPressed;
-            FormsGestures.Droid.Settings.Init(Context);
-            Rg.Plugins.Popup.Popup.Init(Activity, null);
             if (licenseKey != null)
                 System.Console.WriteLine("Forms9Patch is now open source using the MIT license ... so it's free, including for commercial use.  Why?  The more people who use it, the faster bugs will be found and fixed - which helps me and you.  So, please help get the word out - tell your friends, post on social media, write about it on the bathroom walls at work!  If you have purchased a license from me, please don't get mad - you did a good deed.  They really were not that expensive and you did a great service in encouraging me keep working on Forms9Patch.");
+            Init();
         }
 
         private static bool OnBackPressed(object sender, EventArgs e)
-        {
+            => Popup.SendBackPressed();
 
-            var result = Rg.Plugins.Popup.Popup.SendBackPressed();
-            System.Diagnostics.Debug.WriteLine("result=[" + result + "]");
-            return result;
-        }
-
-
-        static bool _initizalized;
         void ISettings.LazyInit()
         {
-            if (_initizalized)
+            if (IsInitialized)
                 return;
-            _initizalized = true;
-            Activity = Context as Android.App.Activity;
+            Init();
+        }
+
+        static void Init()
+        {
+            //Android.Webkit.WebView.EnableSlowWholeDocumentDraw();
+            IsInitialized = true;
+            Activity = Activity ?? Context as Android.App.Activity;
+            Context = Activity as Android.Content.Context;
+            if (Android.OS.Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.Lollipop)
+                Android.Webkit.WebView.EnableSlowWholeDocumentDraw();
+            // these don't work because we get the notification AFTER Xamarin did ... and it runs through all of the subscribers anyway.
+            //Xamarin.Forms.Platform.Android.FormsAppCompatActivity.BackPressed += OnBackPressed;
+            //Xamarin.Forms.Platform.Android.FormsApplicationActivity.BackPressed += OnBackPressed;
             FormsGestures.Droid.Settings.Init(Activity);
-            Rg.Plugins.Popup.Popup.Init(Activity, null);
+            OnInitialized?.Invoke(null, EventArgs.Empty);
+            LinkAssemblies();
+        }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Code Quality", "IDE0051:Remove unused private members", Justification = "<Pending>")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0059:Unnecessary assignment of a value", Justification = "<Pending>")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Code Quality", "IDE0067:Dispose objects before losing scope", Justification = "<Pending>")]
+        private static void LinkAssemblies()
+        {
+            if (false.Equals(true))
+            {
+                var r1 = new PopupPlatformDroid();
+                var r2 = new PopupPageRenderer(null);
+                var r3 = new ColorGradientBoxRenderer(null);
+                var r4 = new EnhancedListViewRenderer(null);
+                var r5 = new HardwareKeyPageRenderer(null);
+                var r6 = new LabelRenderer(null);
+
+                var e1 = new EmbeddedResourceFontEffect();
+                var e2 = new EntryClearButtonEffect();
+                var e3 = new EntryNoUnderlineEffect();
+                var e4 = new SliderStepSizeEffect();
+                var e5 = new HardwareKeyListenerEffect();
+
+                var s1 = new ApplicationInfoService();
+                var s2 = new AudioService();
+                var s3 = new DescendentBounds();
+                var s4 = new FontService();
+                var s5 = new HapticService();
+                var s6 = new KeyboardService();
+                var s7 = new OsInfoService();
+                var s8 = new PrintService();
+                var s9 = new ToPdfService();
+                var s10 = new ToPngService();
+
+            }
         }
         #endregion
     }
@@ -121,6 +148,8 @@ namespace Forms9Patch
 
         public Cell<Label> Include(Cell<Label> cell)
             => new Cell<Label>();
+
+
 #pragma warning restore IDE0060 // Remove unused parameter
     }
 }

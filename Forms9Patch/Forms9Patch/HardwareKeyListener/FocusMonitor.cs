@@ -3,12 +3,15 @@ using Xamarin.Forms;
 using System.Linq;
 using System.Reflection;
 using P42.Utils;
+using System.ComponentModel;
 
 namespace Forms9Patch
 {
     /// <summary>
     /// Focus monitor: Helps you keep up with what VisualElement currently has focus
     /// </summary>
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     public static class FocusMonitor
     {
 #pragma warning disable IDE0044 // Add readonly modifier
@@ -36,7 +39,7 @@ namespace Forms9Patch
         }
 
         static VisualElement _lastFromElement;
-        static DateTime _lastFocusChangedDateTime = DateTime.MinValue;
+        static DateTime _lastFocusChangedDateTime = DateTime.MinValue.AddYears(1);
         internal static void OnVisualElementFocusChanged(object fromElement, VisualElement toElement)
         {
             //System.Diagnostics.Debug.WriteLine("Forms9Patch.FocusMonitor.OnVisualElementFocusChanged(" + fromElement + "," + toElement + ")");
@@ -128,7 +131,7 @@ namespace Forms9Patch
                         changed = true;
                     }
                     //else
-                        //System.Diagnostics.Debug.WriteLine("\t F.A value.Focus()==false");
+                    //System.Diagnostics.Debug.WriteLine("\t F.A value.Focus()==false");
                 }
                 else if (wasElement != null)
                 {

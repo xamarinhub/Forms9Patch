@@ -78,13 +78,26 @@ namespace Forms9Patch
         /// <param name="mimeItemCollection">MIME item collection.</param>
         /// <param name="mimeType">MIME type.</param>
         /// <param name="path">File Path.</param>
-        public static byte[] AddBytesFromFile(this Forms9Patch.MimeItemCollection mimeItemCollection, string mimeType, string path)
+        /// <param name="failAction">What to do if the method fails</param>
+        public static byte[] AddBytesFromFile(this Forms9Patch.MimeItemCollection mimeItemCollection, string mimeType, string path, FailAction failAction = FailAction.ShowAlert)
         {
-            if (File.ReadAllBytes(path) is byte[] byteArray)
+            if (File.ReadAllBytes(path) is byte[] byteArray && byteArray.Length > 0)
             {
                 mimeItemCollection.Items.Add(new MimeItem<byte[]>(mimeType, byteArray));
                 return byteArray;
             }
+            if (failAction == FailAction.ShowAlert)
+            {
+                Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(async () =>
+                {
+                    using (var toast = Alert.Create(null, "Cannot access empty file [" + path + "]"))
+                    {
+                        await toast.WaitForPoppedAsync();
+                    }
+                });
+            }
+            else if (failAction == FailAction.ThrowException)
+                throw new System.Exception("Cannot access empty file [" + path + "]");
             return null;
         }
 

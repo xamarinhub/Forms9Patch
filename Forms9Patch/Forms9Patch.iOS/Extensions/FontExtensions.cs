@@ -13,11 +13,16 @@ using System.Reflection;
 [assembly: Dependency(typeof(FontFamilies))]
 namespace Forms9Patch.iOS
 {
+    [Xamarin.Forms.Internals.Preserve(AllMembers = true)]
     class FontFamilies : IFontFamilies
     {
         List<string> IFontFamilies.FontFamilies()
         {
-            return FontExtensions._embeddedResourceFonts.Keys.Concat(UIFont.FamilyNames).ToList();
+            var result = FontExtensions._embeddedResourceFonts.Keys.ToList();
+            foreach (var fontFamilyName in UIFont.FamilyNames)
+                result.Add(fontFamilyName);
+            //return FontExtensions._embeddedResourceFonts.Keys.Concat(UIFont.FamilyNames).ToList();
+            return result;
         }
 
         internal static List<string> FontsForFamily(string family)
@@ -113,6 +118,7 @@ namespace Forms9Patch.iOS
                         Console.WriteLine("\tdescription: " + error.Description);
                         throw new MissingMemberException("Failed to register [" + resourceId + "] font.  Error messages in console.");
                     }
+                    error?.Dispose();
                 }
                 _embeddedResourceFonts.Add(resourceId, font.PostScriptName);
                 return UIFont.FromName(font.PostScriptName, size);
@@ -128,17 +134,17 @@ namespace Forms9Patch.iOS
             return BestFont(metaFont.Family, size, metaFont.Bold, metaFont.Italic);
         }
 
-        internal static UIFont BestFont(string family, nfloat size, bool bold = false, bool italic = false, Assembly assembly=null)
+        internal static UIFont BestFont(string family, nfloat size, bool bold = false, bool italic = false, Assembly assembly = null)
         {
 
             if (family == null)
-                family = "sans-serif";
+                family = ".AppleSystemUIFont";
             if (family.ToLower() == "monospace")
                 family = "Menlo";
             if (family.ToLower() == "serif")
                 family = "Times New Roman";
             if (family.ToLower() == "sans-serif")
-                family = "Arial";
+                family = ".AppleSystemUIFont";
 
             if (size < 0)
                 size = (nfloat)(UIFont.LabelFontSize * Math.Abs(size));
@@ -152,7 +158,6 @@ namespace Forms9Patch.iOS
                 if (dictionary.TryGetValue(key, out UIFont storedUiFont))
                     return storedUiFont;
             }
-
 
             UIFont bestAttemptFont = null;
             if (UIFont.FamilyNames.Contains(family))
@@ -220,12 +225,22 @@ namespace Forms9Patch.iOS
                 //  an embedded font or a explicitly named system font?
                 bestAttemptFont = EmbeddedFont(family, size, assembly);
 
-                if (bestAttemptFont == null)
+                if (bestAttemptFont == null && !family.StartsWith(".SFUI"))
                     bestAttemptFont = UIFont.FromName(family, size);
             }
 
             if (bestAttemptFont != null)
             {
+                if (bold || italic)
+                {
+                    if (bestAttemptFont.FontDescriptor.CreateWithTraits(
+                        (bold ? UIFontDescriptorSymbolicTraits.Bold : UIFontDescriptorSymbolicTraits.ClassUnknown)
+                        |
+                        (italic ? UIFontDescriptorSymbolicTraits.Italic : UIFontDescriptorSymbolicTraits.ClassUnknown)
+                        ) is UIFontDescriptor descriptor)
+                        bestAttemptFont = UIFont.FromDescriptor(descriptor, size);
+                }
+
                 // we have a match but is wasn't cached - so let's cache it for future reference
                 lock (dictionary)
                 {
@@ -236,11 +251,55 @@ namespace Forms9Patch.iOS
                 return bestAttemptFont;
             }
 
-            // fall back to a system font
-            if (bold && italic)
+            UIFontWeight fontWeight = UIFontWeight.Regular;
+            if (family.StartsWith(".SFUI"))
             {
-                UIFont systemFont = UIFont.SystemFontOfSize(size);
-                var descriptor = systemFont.FontDescriptor.CreateWithTraits(UIFontDescriptorSymbolicTraits.Bold | UIFontDescriptorSymbolicTraits.Italic);
+                var parts = family.Split("-");
+                if (parts.Length > 1)
+                {
+                    var weightText = parts[1];
+                    switch (weightText)
+                    {
+                        case nameof(UIFontWeight.Black):
+                            fontWeight = UIFontWeight.Black;
+                            break;
+                        case nameof(UIFontWeight.Bold):
+                            fontWeight = UIFontWeight.Bold;
+                            break;
+                        case nameof(UIFontWeight.Heavy):
+                            fontWeight = UIFontWeight.Heavy;
+                            break;
+                        case nameof(UIFontWeight.Light):
+                            fontWeight = UIFontWeight.Light;
+                            break;
+                        case nameof(UIFontWeight.Medium):
+                            fontWeight = UIFontWeight.Medium;
+                            break;
+                        case nameof(UIFontWeight.Regular):
+                            fontWeight = UIFontWeight.Medium;
+                            break;
+                        case nameof(UIFontWeight.Semibold):
+                            fontWeight = UIFontWeight.Semibold;
+                            break;
+                        case nameof(UIFontWeight.Thin):
+                            fontWeight = UIFontWeight.Thin;
+                            break;
+                        case nameof(UIFontWeight.UltraLight):
+                            fontWeight = UIFontWeight.UltraLight;
+                            break;
+                        default:
+                            fontWeight = UIFontWeight.Regular;
+                            break;
+                    }
+                }
+                // fall back to a system font
+            }
+            // fall back to a system font
+            if (bold && italic || (fontWeight != UIFontWeight.Regular && (bold || italic)) )
+            {
+                UIFont systemFont = UIFont.SystemFontOfSize(size, fontWeight);
+                UIFontDescriptorSymbolicTraits traits = ( bold ? UIFontDescriptorSymbolicTraits.Bold : (UIFontDescriptorSymbolicTraits)0 ) | (italic ? UIFontDescriptorSymbolicTraits.Italic : (UIFontDescriptorSymbolicTraits)0);
+                var descriptor = systemFont.FontDescriptor.CreateWithTraits(traits);
                 bestAttemptFont = UIFont.FromDescriptor(descriptor, size);
             }
             if (bestAttemptFont == null && italic)
@@ -248,7 +307,7 @@ namespace Forms9Patch.iOS
             if (bestAttemptFont == null && bold)
                 bestAttemptFont = UIFont.BoldSystemFontOfSize(size);
             if (bestAttemptFont == null)
-                bestAttemptFont = UIFont.SystemFontOfSize(size);
+                bestAttemptFont = UIFont.SystemFontOfSize(size, fontWeight);
             return bestAttemptFont;
         }
 

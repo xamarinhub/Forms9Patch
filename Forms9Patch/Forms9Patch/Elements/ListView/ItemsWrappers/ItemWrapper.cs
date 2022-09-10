@@ -1,11 +1,14 @@
 ﻿using Xamarin.Forms;
 using System;
+using System.ComponentModel;
 
 namespace Forms9Patch
 {
     /// <summary>
     /// FormsDragNDropListView Item.
     /// </summary>
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     abstract class ItemWrapper : BindableObject, IItemWrapper
     {
 
@@ -167,6 +170,13 @@ namespace Forms9Patch
         }
         #endregion
 
+        WeakReference _listViewWeakRef;
+        public ListView ListView
+        {
+            get => _listViewWeakRef?.Target as ListView;
+            set => _listViewWeakRef = new WeakReference(value, false);
+        }
+
         #endregion
 
 
@@ -287,7 +297,12 @@ namespace Forms9Patch
 
         protected override void OnPropertyChanged(string propertyName = null)
         {
-            base.OnPropertyChanged(propertyName);
+            try
+            {
+                base.OnPropertyChanged(propertyName);
+            }
+            catch (Exception) { }
+
             if (propertyName == IsSelectedProperty.PropertyName)
             {
                 if (Source is IIsSelectedAble isSelectedSource)

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using Android.Views;
@@ -46,9 +46,12 @@ namespace FormsGestures.Droid
         //List<Listener> _listeners;
         internal Listener Listener;
 
+
         /// <summary>
         /// The renderer for _element
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "We don't own Renderer")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Code Quality", "IDE0069:Disposable fields should be disposed", Justification = "We don't own Renderer")]
         internal IVisualElementRenderer Renderer = null;
 
         /// <summary>
@@ -95,7 +98,7 @@ namespace FormsGestures.Droid
                 return;
             _onTouchListener?.Dispose();
             _onTouchListener = null;
-            if (Renderer?.View!=null)
+            if (Renderer?.View != null)
                 Renderer.View.Touch -= View_Touch;
             _deactivated = true;
             DeactivateInstancesForChildren(force);
@@ -104,9 +107,10 @@ namespace FormsGestures.Droid
             Element.SetValue(GestureHandlerProperty, null);
             Element = null;
             Listener = null;
-            
+
         }
         #endregion
+
 
         #region Get/Remove existing NativeGestureDetector
         internal static NativeGestureHandler InstanceForElement(Xamarin.Forms.Element element)
@@ -121,6 +125,8 @@ namespace FormsGestures.Droid
         #region Constructor / Disposer
         NativeGestureHandler(VisualElement element)
         {
+            P42.Utils.DebugExtensions.AddToCensus(this);
+
             _id = instances++;
             Element = element;
             Element.Behaviors.Add(this);
@@ -140,6 +146,8 @@ namespace FormsGestures.Droid
             {
                 _disposed = true;
                 Deactivate();
+
+                P42.Utils.DebugExtensions.RemoveFromCensus(this);
             }
         }
         #endregion
@@ -224,9 +232,9 @@ namespace FormsGestures.Droid
         private void View_Touch(object sender, Android.Views.View.TouchEventArgs e)
         {
             var action = e.Event.Action;
-            if (action!= MotionEventActions.Down
+            if (action != MotionEventActions.Down
                 && action != MotionEventActions.Up)
-            System.Diagnostics.Debug.WriteLine(GetType() + "." + P42.Utils.ReflectionExtensions.CallerMemberName() + " Event=["+e.Event+"]");
+                System.Diagnostics.Debug.WriteLine(GetType() + "." + P42.Utils.ReflectionExtensions.CallerMemberName() + " Event=[" + e.Event + "]");
             //if (sender is Android.Views.View view)
             //    _onTouchListener?.OnTouch(view, e.Event);
         }
@@ -290,6 +298,7 @@ namespace FormsGestures.Droid
         }
 
         #endregion
+
 
         void OnElementPropertyChanged(object sender, PropertyChangedEventArgs e)
         {

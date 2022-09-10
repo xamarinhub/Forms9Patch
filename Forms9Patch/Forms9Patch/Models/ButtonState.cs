@@ -1,61 +1,22 @@
 using System;
 using Xamarin.Forms;
-
+using System.ComponentModel;
 namespace Forms9Patch
 {
     /// <summary>
     /// OBSOLETE: Use ButtonState
     /// </summary>
-    [Obsolete("Use ButtonState")]
+    [Obsolete("Use ButtonState", true)]
     public class ImageButtonState : ButtonState { }
 
     /// <summary>
     /// Describes the properties of a <see cref="StateButton"/> for a given state.
     /// </summary>
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     [ContentProperty(nameof(HtmlText))]
     public class ButtonState : BindableObject, IButtonState
     {
-
-        #region Obsolete Properties
-        /// <summary>
-        /// OBSOLETE: Use IconImageProperty
-        /// </summary>
-        [Obsolete("Use IconImageProperty")]
-        public static BindableProperty ImageProperty = BindableProperty.Create(nameof(Image), typeof(Forms9Patch.Image), typeof(ImageButtonState), null, propertyChanged: (bindable, oldValue, newValue) =>
-        {
-            if (bindable is ImageButtonState state && newValue is Image image)
-                state.IconImage = image;
-        });
-        /// <summary>
-        /// OBSOLETE: Use IconImage
-        /// </summary>
-        [Obsolete("Use IconImage")]
-        public Image Image
-        {
-            get { return (Forms9Patch.Image)GetValue(ImageProperty); }
-            set { SetValue(ImageProperty, value); }
-        }
-
-        /// <summary>
-        /// OBSOLETE: Use TextColorProperty
-        /// </summary>
-        [Obsolete("Use TextColorProperty")]
-        public static readonly BindableProperty FontColorProperty = BindableProperty.Create(nameof(FontColor), typeof(Color), typeof(ImageButtonState), Color.Default, propertyChanged: (bindable, oldValue, newValue) =>
-        {
-            if (bindable is ImageButtonState state && newValue is Color color)
-                state.TextColor = color;
-        });
-        /// <summary>
-        /// OBSOLETE: Use TextColor
-        /// </summary>
-        [Obsolete("Use TextColor")]
-        public Color FontColor
-        {
-            get { return (Color)GetValue(FontColorProperty); }
-            set { SetValue(FontColorProperty, value); }
-        }
-
-        #endregion
 
 #pragma warning disable IDE0044 // Add readonly modifier
         int _instances;
@@ -95,10 +56,16 @@ namespace Forms9Patch
         #endregion IconText
 
         #region IconFontFamily property
+        internal bool IconFontFamilySet;
         /// <summary>
         /// backing store for the IconFontFamily property
         /// </summary>
-        public static readonly BindableProperty IconFontFamilyProperty = BindableProperty.Create(nameof(IconFontFamily), typeof(string), typeof(ButtonState), default(string));
+        public static readonly BindableProperty IconFontFamilyProperty = BindableProperty.Create(nameof(IconFontFamily), typeof(string), typeof(ButtonState), default(string),
+            propertyChanged: (bindable, oldValue, newValue) =>
+            {
+                ((ButtonState)bindable).IconFontFamilySet = newValue != null;
+            }
+            );
         /// <summary>
         /// The font used to render the IconText
         /// </summary>
@@ -108,6 +75,28 @@ namespace Forms9Patch
             set => SetValue(IconFontFamilyProperty, value);
         }
         #endregion IconFontFamily property
+
+        #region IconFontSize
+        internal bool IconFontSizeSet;
+        /// <summary>
+        /// Backing store for ButtonState IconFontSize property
+        /// </summary>
+        public static readonly BindableProperty IconFontSizeProperty = BindableProperty.Create(nameof(IconFontSize), typeof(double), typeof(ButtonState), -1.0,
+            propertyChanged: (bindable, oldValue, newValue) =>
+            {
+                ((ButtonState)bindable).IconFontSizeSet = ((double)newValue) >= 0;
+            }
+            );
+        /// <summary>
+        /// controls value of .IconFontSize property
+        /// </summary>
+        public double IconFontSize
+        {
+            get => (double)GetValue(IconFontSizeProperty);
+            set => SetValue(IconFontSizeProperty, value);
+        }
+        #endregion
+
 
         #region TrailingIcon
         internal bool TrailingIconSet;
@@ -150,6 +139,23 @@ namespace Forms9Patch
             set => SetValue(TintIconProperty, value);
         }
         #endregion TintIcon
+
+        #region IconColor
+        /// <summary>
+        /// Backing store for ButtonState IconColor property
+        /// </summary>
+        public static readonly BindableProperty IconColorProperty = BindableProperty.Create(nameof(IconColor), typeof(Color), typeof(ButtonState), default);
+        /// <summary>
+        /// Overrides this icon color as provided by the Button's TextColor (if TintIcon=true), the default TextColor (if IconText != null), or the IconImage colors
+        /// </summary>
+        public Color IconColor
+        {
+            get => (Color)GetValue(IconColorProperty);
+            set => SetValue(IconColorProperty, value);
+        }
+        #endregion
+
+
 
         #region HasTightSpacing
         internal bool HasTightSpacingSet;
@@ -762,6 +768,7 @@ namespace Forms9Patch
             TrailingIcon = source.TrailingIcon;
             TrailingIconSet = source.TrailingIconSet;
             TintIcon = source.TintIcon;
+            IconColor = source.IconColor;
             TintIconSet = source.TintIconSet;
             HasTightSpacing = source.HasTightSpacing;
             HasTightSpacingSet = source.HasTightSpacingSet;
@@ -818,6 +825,9 @@ namespace Forms9Patch
             FontFamilySet = source.FontFamilySet;
             FontAttributes = source.FontAttributes;
             FontAttributesSet = source.FontAttributesSet;
+
+            IconFontSize = source.IconFontSize;
+            IconFontFamily = source.IconFontFamily;
             #endregion
 
             #endregion ILabel
@@ -834,21 +844,23 @@ namespace Forms9Patch
         /// </summary>
         protected override void OnPropertyChanged(string propertyName = null)
         {
-            if (!P42.Utils.Environment.IsOnMainThread)
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
             {
-                Device.BeginInvokeOnMainThread(() => OnPropertyChanged(propertyName));
-                return;
-            }
+                try
+                {
+                    base.OnPropertyChanged(propertyName);
+                }
+                catch (Exception) { }
 
-            base.OnPropertyChanged(propertyName);
-            if (propertyName == HtmlTextProperty.PropertyName && HtmlText != null)
-                Text = null;
-            else if (propertyName == TextProperty.PropertyName && Text != null)
-                HtmlText = null;
-            else if (propertyName == IconImageProperty.PropertyName && IconImage != null)
-                IconText = null;
-            else if (propertyName == IconTextProperty.PropertyName && IconText != null)
-                IconImage = null;
+                if (propertyName == HtmlTextProperty.PropertyName && HtmlText != null)
+                    Text = null;
+                else if (propertyName == TextProperty.PropertyName && Text != null)
+                    HtmlText = null;
+                else if (propertyName == IconImageProperty.PropertyName && IconImage != null)
+                    IconText = null;
+                else if (propertyName == IconTextProperty.PropertyName && IconText != null)
+                    IconImage = null;
+            });
         }
         #endregion
 

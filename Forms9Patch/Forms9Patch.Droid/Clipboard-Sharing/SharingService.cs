@@ -22,10 +22,14 @@ using P42.Utils;
 [assembly: Dependency(typeof(Forms9Patch.Droid.SharingService))]
 namespace Forms9Patch.Droid
 {
+    [Xamarin.Forms.Internals.Preserve(AllMembers = true)]
     public class SharingService : Forms9Patch.ISharingService
     {
 
         public void Share(Forms9Patch.MimeItemCollection mimeItemCollection, VisualElement target)
+            => Share(mimeItemCollection, target, false);
+
+        public void Share(Forms9Patch.MimeItemCollection mimeItemCollection, VisualElement target, bool retry)
         {
             var uris = mimeItemCollection.AsContentUris();
             if (uris.Count > 0)
@@ -44,14 +48,16 @@ namespace Forms9Patch.Droid
                     if (text == null && item.Value.MimeType == "text/plain")
                         text = (string)item.Value.Value;
                 }
-                if (html != null)
+                if (!retry)
                 {
-                    intent.PutExtra(Intent.ExtraText, text ?? html);
-                    intent.PutExtra(Intent.ExtraHtmlText, html);
+                    if (html != null)
+                    {
+                        intent.PutExtra(Intent.ExtraText, text ?? html);
+                        intent.PutExtra(Intent.ExtraHtmlText, html);
+                    }
+                    else if (text != null)
+                        intent.PutExtra(Intent.ExtraText, text);
                 }
-                else if (text != null)
-                    intent.PutExtra(Intent.ExtraText, text);
-
 
                 if (uris.Count == 1)
                 {
@@ -69,8 +75,25 @@ namespace Forms9Patch.Droid
                 }
 
 
-
-                Forms9Patch.Droid.Settings.Activity.StartActivity(Intent.CreateChooser(intent, "Share ..."));
+                try
+                {
+                    Forms9Patch.Droid.Settings.Activity.StartActivity(Intent.CreateChooser(intent, "Share ..."));
+                }
+                catch (Exception e)
+                {
+                    if (!retry)
+                        Share(mimeItemCollection, target, true);
+                    else
+                    {
+                        Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(async () =>
+                        {
+                            using (var toast = Forms9Patch.Toast.Create("Sharing Failure", e.Message))
+                            {
+                                await toast.WaitForPoppedAsync();
+                            }
+                        });
+                    }
+                }
             }
         }
     }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using Xamarin.Forms;
 
 namespace Forms9Patch
@@ -6,8 +7,15 @@ namespace Forms9Patch
     /// <summary>
     /// Interface used to queary current state of Forms9Patch.ListView cells and the ItemSource object bound to the cells view.
     /// </summary>
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     internal interface IItemWrapper
     {
+        /// <summary>
+        /// The Forms9Patch.ListView hosting this cell
+        /// </summary>
+        ListView ListView { get; }
+
         /// <summary>
         /// Gets the parent.
         /// </summary>

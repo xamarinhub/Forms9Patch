@@ -1,12 +1,15 @@
-﻿using System;
+﻿using Forms9Patch.Elements.Popups.Core;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
+using Xamarin.Forms;
 
 [assembly: Xamarin.Forms.Dependency(typeof(Forms9Patch.UWP.Settings))]
 namespace Forms9Patch.UWP
 {
+    [Xamarin.Forms.Internals.Preserve(AllMembers = true)]
     public class Settings : ISettings
     {
         #region Fields
@@ -15,46 +18,42 @@ namespace Forms9Patch.UWP
         public List<Assembly> IncludedAssemblies => AssembliesToInclude;
         #endregion
 
+
+        #region Properties
+        internal static bool IsInitialized { get; private set; }
+        #endregion
+
+
+        #region Events
+        internal static event EventHandler OnInitialized;
+        #endregion
+
+
         #region Initialization
         public static void Initialize(Windows.UI.Xaml.Application app, string licenseKey = null)
         {
             //Windows.UI.Core.SystemNavigationManager.GetForCurrentView().BackRequested += OnBackRequested;
 
-            _initizalized = true;
-            Xamarin.Forms.DependencyService.Register<ApplicationInfoService>();
-            Xamarin.Forms.DependencyService.Register<DescendentBounds>();
-            Xamarin.Forms.DependencyService.Register<InstalledFont>();
-            Xamarin.Forms.DependencyService.Register<FontService>();
-            Xamarin.Forms.DependencyService.Register<HtmlToPngService>();
-            Xamarin.Forms.DependencyService.Register<KeyboardService>();
-            Xamarin.Forms.DependencyService.Register<OsInfoService>();
-            Xamarin.Forms.DependencyService.Register<WebViewExtensionsService>();
-            Xamarin.Forms.DependencyService.Register<Settings>();
-            Xamarin.Forms.DependencyService.Register<SharingService>();
-            Xamarin.Forms.DependencyService.Register<ClipboardService>();
-
-            Application = app;
-            FormsGestures.UWP.Settings.Init(app);
-            Rg.Plugins.Popup.Popup.Init();
-
-            //var forms9PatchResources = GetResources();
-            //Windows.UI.Xaml.Application.Current.Resources.MergedDictionaries.Add(forms9PatchResources);
-
+            Init();
             if (licenseKey != null)
                 System.Console.WriteLine("Forms9Patch is now open source using the MIT license ... so it's free, including for commercial use.  Why?  The more people who use it, the faster bugs will be found and fixed - which helps me and you.  So, please help get the word out - tell your friends, post on social media, write about it on the bathroom walls at work!  If you have purchased a license from me, please don't get mad - you did a good deed.  They really were not that expensive and you did a great service in encouraging me keep working on Forms9Patch.");
         }
 
-        static bool _initizalized;
         void ISettings.LazyInit()
         {
-            if (_initizalized)
+            if (IsInitialized)
                 return;
-            _initizalized = true;
-            FormsGestures.UWP.Settings.Init(Windows.UI.Xaml.Application.Current);
-            Rg.Plugins.Popup.Popup.Init();
+            Init();
         }
 
-
+        static void Init()
+        {
+            IsInitialized = true;
+            Application = Windows.UI.Xaml.Application.Current;
+            FormsGestures.UWP.Settings.Init(Windows.UI.Xaml.Application.Current);
+            OnInitialized?.Invoke(null, EventArgs.Empty);
+            LinkAssemblies();
+        }
         #endregion
 
 #pragma warning disable CC0057 // Unused parameters
@@ -63,7 +62,7 @@ namespace Forms9Patch.UWP
 #pragma warning restore IDE0060 // Remove unused parameter
 #pragma warning restore CC0057 // Unused parameters
         {
-            var popupNavigationInstance = Rg.Plugins.Popup.Services.PopupNavigation.Instance;
+            var popupNavigationInstance = PopupNavigation.Instance;
             //e.Handled = false;
             if (popupNavigationInstance.PopupStack.Count > 0)
             {
@@ -81,22 +80,6 @@ namespace Forms9Patch.UWP
                 }
 
                 e.Handled = true;
-                /*
-                //Windows.UI.Core.SystemNavigationManager.GetForCurrentView().BackRequested += OnBackRequested;
-                var b = Windows.UI.Core.SystemNavigationManager.GetForCurrentView();
-                var fields = typeof(Windows.UI.Core.SystemNavigationManager).GetFields();
-                var events = typeof(Windows.UI.Core.SystemNavigationManager).GetRuntimeEvents();
-                //EventInfo f1 = typeof(Windows.UI.Core.SystemNavigationManager).GetEvent("BackRequested", BindingFlags.Static | BindingFlags.NonPublic);
-                EventInfo f1 = null;
-                foreach (var evnt in events)
-                    if (evnt.Name == "BackRequested")
-                        f1 = evnt;
-                var remove = f1.GetRemoveMethod();
-                var methods = f1.GetOtherMethods();
-
-                //foreach (var method in methods)
-                //    f1.RemoveEventHandler(b, method);
-                */
             }
 
         }
@@ -151,12 +134,6 @@ namespace Forms9Patch.UWP
                     try { _forms9PatchAssemblies.Add(typeof(SharpDX.Direct2D1.Factory).GetTypeInfo().Assembly); }
                     catch (Exception) { throw new Exception("Cannot load SharpDX.Direct2D1 assembly"); }
 
-                    var rgPluginsAsms = Rg.Plugins.Popup.Popup.GetExtraAssemblies();
-                    foreach (var asm in rgPluginsAsms)
-                    {
-                        try { _forms9PatchAssemblies.Add(asm); }
-                        catch (Exception) { throw new Exception("Cannot load assembly ["+asm.FullName+"]"); }
-                    }
                 }
                 return _forms9PatchAssemblies;
             }
@@ -171,9 +148,57 @@ namespace Forms9Patch.UWP
                 {
                     _assembliesToInclude = new List<Assembly>();
                     _assembliesToInclude.AddRange(Forms9PatchAssemblies);
-                    //_assembliesToInclude.AddRange(Rg.Plugins.Popup.Popup.GetExtraAssemblies());
                 }
                 return _assembliesToInclude;
+            }
+        }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0059:Unnecessary assignment of a value", Justification = "<Pending>")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Code Quality", "IDE0067:Dispose objects before losing scope", Justification = "<Pending>")]
+        private static void LinkAssemblies()
+        {
+            Xamarin.Forms.DependencyService.Register<ApplicationInfoService>();
+            Xamarin.Forms.DependencyService.Register<DescendentBounds>();
+            Xamarin.Forms.DependencyService.Register<InstalledFont>();
+            Xamarin.Forms.DependencyService.Register<FontService>();
+            Xamarin.Forms.DependencyService.Register<Forms9Patch.UWP.ToPngService>();
+            Xamarin.Forms.DependencyService.Register<KeyboardService>();
+            Xamarin.Forms.DependencyService.Register<OsInfoService>();
+            Xamarin.Forms.DependencyService.Register<PrintService>();
+            Xamarin.Forms.DependencyService.Register<Settings>();
+            Xamarin.Forms.DependencyService.Register<PopupPlatformUWP>();
+            Xamarin.Forms.DependencyService.Register<SharingService>();
+            Xamarin.Forms.DependencyService.Register<ClipboardService>();
+
+            if (false.Equals(true))
+            {
+
+                // Effects
+                var e1 = new EmbeddedResourceFontEffect();
+                var e2 = new SliderStepSizeEffect();
+                var e3 = new HardwareKeyListenerEffect();
+
+                // Renderers
+                var r1 = new EnhancedListViewRenderer();
+                var r2 = new LabeLRenderer();
+                var r3 = new HardwareKeyPageRenderer();
+                var r4 = new PopupPageRenderer();
+                var r5 = new ColorGradientBoxRenderer();
+
+                var p1 = new PopupPlatformUWP();
+
+                // Services
+                var s1 = new ApplicationInfoService();
+                //var s2 = new AudioService();
+                var s3 = new DescendentBounds();
+                var s4 = new FontService();
+                //var s5 = new HapticService();
+                var s6 = new KeyboardService();
+                var s7 = new OsInfoService();
+                var s8 = new PrintService();
+                //var s9 = new ToPdfService();
+                var s10 = new ToPngService();
+
             }
         }
         #endregion

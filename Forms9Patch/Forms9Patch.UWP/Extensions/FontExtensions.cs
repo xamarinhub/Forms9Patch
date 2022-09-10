@@ -19,8 +19,8 @@ namespace Forms9Patch.UWP
 {
     static class FontExtensions
     {
-        const double lineHeightToFontSizeRatio = 1.4;
-        const double roundToNearest = 1;
+        //const double lineHeightToFontSizeRatio = 1.4;
+        //const double roundToNearest = 1;
 
         public static SharpDX.DirectWrite.FontWeight ToDxFontWeight(this Windows.UI.Text.FontWeight fontWeight)
             => DxFontWeight(fontWeight.Weight);
@@ -101,7 +101,7 @@ namespace Forms9Patch.UWP
             => GetDxFont(textBlock.FontFamily.Source, textBlock.FontWeight.ToDxFontWeight(), textBlock.FontStretch.ToDxFontStretch(), textBlock.FontStyle.ToDxFontStyle());
         
 
-        static Dictionary<string, SharpDX.DirectWrite.Font> _loadedFonts = new Dictionary<string, SharpDX.DirectWrite.Font>();
+        readonly static Dictionary<string, SharpDX.DirectWrite.Font> _loadedFonts = new Dictionary<string, SharpDX.DirectWrite.Font>();
 
         public static SharpDX.DirectWrite.Font GetDxFont(string fontFamily, SharpDX.DirectWrite.FontWeight weight , SharpDX.DirectWrite.FontStretch stretch, SharpDX.DirectWrite.FontStyle style)
         {
@@ -123,7 +123,7 @@ namespace Forms9Patch.UWP
                     string dir = null;
                     if (fontFamilyFilePath.StartsWith("local/"))
                     {
-                        dir = ApplicationData.Current.LocalFolder.Path;
+                        dir =  ApplicationData.Current.LocalFolder.Path;
                         fontFamilyFilePath = fontFamilyFilePath.Substring(6);
                     }
                     else if (fontFamilyFilePath.StartsWith("localcache/"))
@@ -147,7 +147,7 @@ namespace Forms9Patch.UWP
                         return null;
                     }
                     var path = System.IO.Path.Combine(dir, fontFamilyFilePath.Split('#')[0]);
-
+                    path = path.Replace('/','\\');
                     var fontFile = new SharpDX.DirectWrite.FontFile(factory, path );
 
                     var loader = fontFile.Loader;
@@ -218,21 +218,21 @@ namespace Forms9Patch.UWP
 
         internal static void DebugMetricsForLabel(this TextBlock textBlock)
         {
-            Debug.WriteLine("TextBlock: " + textBlock.Text);
+            System.Diagnostics.Debug.WriteLine("TextBlock: " + textBlock.Text);
             textBlock.GetFontMetrics().DebugMetricsForFontSize(textBlock.FontSize);
-            Debug.WriteLine("\t LineHeight: " + textBlock.LineHeight);
-            Debug.WriteLine("");
+            System.Diagnostics.Debug.WriteLine("\t LineHeight: " + textBlock.LineHeight);
+            System.Diagnostics.Debug.WriteLine("");
         }
 
         internal static void DebugMetricsForFontSize(this FontMetrics metric, double fontSize)
         {
-            Debug.WriteLine("Metrics for FontSize: " + fontSize);
-            Debug.WriteLine("\t Ascent: " + metric.AscentForFontSize(fontSize));
-            Debug.WriteLine("\t Descent: " + metric.DescentForFontSize(fontSize));
-            Debug.WriteLine("\t CapHeight: " + metric.CapHeightForFontSize(fontSize));
-            Debug.WriteLine("\t XHeight: " + metric.XHeightForFontSize(fontSize));
-            Debug.WriteLine("\t LineGap: " + metric.LineGapForFontSize(fontSize));
-            Debug.WriteLine("\t LineHeight: " + metric.LineHeightForFontSize(fontSize));
+            System.Diagnostics.Debug.WriteLine("Metrics for FontSize: " + fontSize);
+            System.Diagnostics.Debug.WriteLine("\t Ascent: " + metric.AscentForFontSize(fontSize));
+            System.Diagnostics.Debug.WriteLine("\t Descent: " + metric.DescentForFontSize(fontSize));
+            System.Diagnostics.Debug.WriteLine("\t CapHeight: " + metric.CapHeightForFontSize(fontSize));
+            System.Diagnostics.Debug.WriteLine("\t XHeight: " + metric.XHeightForFontSize(fontSize));
+            System.Diagnostics.Debug.WriteLine("\t LineGap: " + metric.LineGapForFontSize(fontSize));
+            System.Diagnostics.Debug.WriteLine("\t LineHeight: " + metric.LineHeightForFontSize(fontSize));
 
 
 
@@ -385,9 +385,10 @@ namespace Forms9Patch.UWP
 
     class FontCollectionLoader : CallbackBase, SharpDX.DirectWrite.FontCollectionLoader
     {
-        FontFileEnumerator _fontFileEnumerator;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "will persist ")]
+        readonly FontFileEnumerator _fontFileEnumerator;
 
-        public FontCollectionLoader(FontFile fontFile)
+        public FontCollectionLoader(SharpDX.DirectWrite.FontFile fontFile)
         {
             _fontFileEnumerator = new FontFileEnumerator(fontFile);
         }
@@ -400,15 +401,15 @@ namespace Forms9Patch.UWP
 
     class FontFileEnumerator : CallbackBase, SharpDX.DirectWrite.FontFileEnumerator
     {
-        FontFile _fontFile;
+        readonly SharpDX.DirectWrite.FontFile _fontFile;
 
-        public FontFileEnumerator(FontFile fontFile)
+        public FontFileEnumerator(SharpDX.DirectWrite.FontFile fontFile)
         {
             _fontFile = fontFile;
             //CurrentFontFile = _fontFile;
         }
 
-        public FontFile CurrentFontFile
+        public SharpDX.DirectWrite.FontFile CurrentFontFile
         {
             get;
             private set;
@@ -429,6 +430,7 @@ namespace Forms9Patch.UWP
     class FontFileLoader : CallbackBase, SharpDX.DirectWrite.FontFileLoader
     {
         private readonly Factory _factory;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Will persist the duration of app life")]
         private FontFileStream _fontStream;
 
         public FontFileLoader(Factory factory)

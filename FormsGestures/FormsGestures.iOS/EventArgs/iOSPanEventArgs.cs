@@ -8,12 +8,14 @@ namespace FormsGestures.iOS
 {
 	public class iOSPanEventArgs : PanEventArgs
 	{
-		public iOSPanEventArgs(UIPanGestureRecognizer gr, PanEventArgs previous, CoreGraphics.CGPoint locationAtStart)
+		public iOSPanEventArgs(UIPanGestureRecognizer gr, BaseGestureEventArgs previous)
 		{
 			Cancelled = (gr.State == UIGestureRecognizerState.Cancelled || gr.State == UIGestureRecognizerState.Failed);
-			ViewPosition = iOSEventArgsHelper.GetViewPosition(gr.View.Frame);
-			Touches = iOSEventArgsHelper.GetTouches(gr, locationAtStart);
-			base.CalculateDistances(previous);
+			ElementPosition = gr.View.BoundsInFormsCoord();
+			ElementTouches = iOSEventArgsHelper.GetTouches(gr, gr.View);
+			WindowTouches = iOSEventArgsHelper.GetTouches(gr, null);
+
+            CalculateDistances(previous);
 			Velocity = GetVelocity(gr);
 		}
 

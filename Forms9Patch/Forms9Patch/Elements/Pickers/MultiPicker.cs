@@ -1,29 +1,39 @@
-﻿using System;
-using System.Collections;
+﻿using System.ComponentModel;
 using Xamarin.Forms;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
+using System.Collections.Generic;
+using P42.Utils;
+using System;
 
 namespace Forms9Patch
 {
     /// <summary>
     /// Multi picker.
     /// </summary>
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     public class MultiPicker : SinglePicker
     {
         #region Properties
+
         /// <summary>
-        /// The selected items property.
+        /// The indexes currently selected
         /// </summary>
-        public static readonly BindablePropertyKey SelectedItemsPropertyKey = BindableProperty.CreateReadOnly(nameof(SelectedItems), typeof(ObservableCollection<object>), typeof(MultiPicker), null);
-        /// <summary>
-        /// Gets or sets the selected items.
-        /// </summary>
-        /// <value>The selected items.</value>
-        public ObservableCollection<object> SelectedItems
+        public List<int> SelectedIndexes
         {
-            get => (ObservableCollection<object>)GetValue(SelectedItemsPropertyKey.BindableProperty);
-            private set => SetValue(SelectedItemsPropertyKey, value);
+            get
+            {
+                var result = new List<int>();
+                var itemsSource = ItemsSource.Cast<object>().ToArray();
+                for (int i = 0; i < itemsSource.Length; i++)
+                {
+                    //if (SelectedItems.Contains(itemsSource[i]))
+                    //if (SelectedIndexes.Contains(i))
+                        result.Add(i);
+                }
+                return result;
+            }
         }
 
         #endregion
@@ -35,128 +45,107 @@ namespace Forms9Patch
         /// </summary>
         public MultiPicker()
         {
-            //SelectedItems = new ObservableCollection<object>();
-            _lowerGradient.StartColor = _overlayColor.WithAlpha(0);
-            _upperGradient.EndColor = _overlayColor.WithAlpha(0);
-            _basePicker.SelectBy = SelectBy.Default;
-            Children.Remove(_lowerEdge);
-            Children.Remove(_upperEdge);
-            _basePicker.GroupToggleBehavior = GroupToggleBehavior.Multiselect;
+            PlainTextCellType = typeof(MultiPickerCellContentView);
+            HtmlTextCellType = typeof(MultiPickerHtmlCellContentView);
+            //SelectionMode = ListViewSelectionMode.
 
-            _basePicker.ItemTemplates.RemoveFactoryDefaults();
-            _basePicker.ItemTemplates.Add(typeof(string), typeof(MultiPickerCellContentView));
-
-            SelectedItems = _basePicker.SelectedItems;
-
-            SelectedItems.CollectionChanged += (sender, e) => OnPropertyChanged(SelectedItemsPropertyKey.BindableProperty.PropertyName);
+            ItemTemplates.Clear();
+            ItemTemplates.Add(typeof(string), PlainTextCellType);
         }
         #endregion
 
 
-    }
-
-
-
-    #region Cell Template
-    class MultiPickerCellContentView : Grid, ICellContentView, IIsSelectedAble
-    {
-        #region Properties
-        public double CellHeight { get; set; }
-
-        public static readonly BindableProperty IsSelectedProperty = BindableProperty.Create(nameof(IsSelected), typeof(bool), typeof(MultiPickerCellContentView), default(bool));
-        public bool IsSelected
+        #region Cell Template
+        /// <summary>
+        /// MultiPicker HTML cell content view
+        /// </summary>
+        [Xamarin.Forms.Internals.Preserve(AllMembers = true)]
+        protected class MultiPickerHtmlCellContentView : MultiPickerCellContentView
         {
-            get => (bool)GetValue(IsSelectedProperty);
-            set => SetValue(IsSelectedProperty, value);
-        }
-
-        #endregion
-
-
-        #region Fields
-        readonly Label checkLabel = new Label
-        {
-            Text = "✓",
-            TextColor = Color.Blue,
-            VerticalTextAlignment = TextAlignment.Center,
-            HorizontalTextAlignment = TextAlignment.Center,
-            IsVisible = false
-        };
-        readonly Label itemLabel = new Label
-        {
-            TextColor = Color.Black,
-            VerticalTextAlignment = TextAlignment.Center,
-            HorizontalTextAlignment = TextAlignment.Start
-        };
-
-        #endregion
-
-
-        #region Constructors
-        public MultiPickerCellContentView()
-        {
-            CellHeight = 50;
-            Padding = new Thickness(5, 1, 5, 1);
-            ColumnDefinitions = new ColumnDefinitionCollection
+            /// <summary>
+            /// Constructor
+            /// </summary>
+            public MultiPickerHtmlCellContentView()
             {
-                new ColumnDefinition { Width = new GridLength(30,GridUnitType.Absolute)},
-                new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star)}
-            };
-            RowDefinitions = new RowDefinitionCollection
-            {
-                new RowDefinition { Height = new GridLength(CellHeight - Padding.VerticalThickness, GridUnitType.Absolute)}
-            };
-            IgnoreChildren = true;
-            ColumnSpacing = 0;
-
-            Children.Add(itemLabel, 1, 0);
-            Children.Add(checkLabel, 0, 0);
-        }
-        #endregion
-
-
-        #region Change management
-        protected override void OnBindingContextChanged()
-        {
-            if (!P42.Utils.Environment.IsOnMainThread)
-            {
-                Device.BeginInvokeOnMainThread(OnBindingContextChanged);
-                return;
+                itemLabel.TextType = TextType.Html;
             }
 
-            base.OnBindingContextChanged();
-            if (BindingContext != null)
-                itemLabel.Text = BindingContext.ToString();
-            else
-                itemLabel.Text = null;
+            /// <summary>
+            /// Same as it ever was
+            /// </summary>
+            protected override void OnBindingContextChanged()
+            {
+                Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    base.OnBindingContextChanged();
+
+                    if (BindingContext is IHtmlString htmlObject)
+                        itemLabel.Text = htmlObject.ToHtml();
+                    else if (BindingContext != null)
+                        itemLabel.Text = BindingContext?.ToString();
+                    else
+                        itemLabel.Text = itemLabel.Text = null;
+                });
+            }
         }
 
-        protected override void OnPropertyChanged(string propertyName = null)
+        /// <summary>
+        /// MultiPicker cell content view
+        /// </summary>
+        [Xamarin.Forms.Internals.Preserve(AllMembers = true)]
+        protected class MultiPickerCellContentView : SinglePickerCellContentView
         {
-            if (!P42.Utils.Environment.IsOnMainThread)
+            #region Fields
+            /// <summary>
+            /// Protected use
+            /// </summary>
+            protected readonly Label checkLabel = new Label
             {
-                Device.BeginInvokeOnMainThread(() => OnPropertyChanged(propertyName));
-                return;
+                Text = "✓",
+                TextColor = Color.Blue,
+                VerticalTextAlignment = TextAlignment.Center,
+                HorizontalTextAlignment = TextAlignment.Center,
+                IsVisible = false
+            };
+            #endregion
+
+
+            #region Constructors
+            /// <summary>
+            /// Constructor for MultiPicker Cell content view
+            /// </summary>
+            public MultiPickerCellContentView()
+            {
+                grid.ColumnDefinitions = new ColumnDefinitionCollection
+                {
+                    new ColumnDefinition { Width = new GridLength(30,GridUnitType.Absolute)},
+                    new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star)}
+                };
+                grid.Children.Add(checkLabel, 0, 0);
+            }
+            #endregion
+
+
+            #region Change management
+            /// <summary>
+            /// Same as it ever was
+            /// </summary>
+            protected override void OnPropertyChanged(string propertyName = null)
+            {
+                Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
+                {
+
+                    base.OnPropertyChanged(propertyName);
+
+                    if (propertyName == IsSelectedProperty.PropertyName)
+                        checkLabel.IsVisible = IsSelected;
+                });
             }
 
-            base.OnPropertyChanged(propertyName);
+            #endregion
 
-            if (propertyName == IsSelectedProperty.PropertyName)
-                checkLabel.IsVisible = IsSelected;
         }
-
         #endregion
-
-
-        #region Appearing / Disappearing Event Handlers
-        public virtual void OnAppearing() { }
-
-        public virtual void OnDisappearing() { }
-        #endregion
-
-
-
     }
-    #endregion
 }
 

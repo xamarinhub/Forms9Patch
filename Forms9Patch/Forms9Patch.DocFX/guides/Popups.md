@@ -1,8 +1,6 @@
 # Forms9Patch Popups
 
-Yet another thing missing from Xamarin Forms is a comprehensive set of popup views.  Forms9Patch has a eight (ModalPopup, BubblePopup, FlyoutPopup, Toast, TargetedToast, PermissionPopup, ActivityIndicatorPopup and TargetedMenu) popups to simplify the most common tasks.  However, this comes at a price!  In previous releases of Forms9Patch, I tried to implement the popups in a way that would require the least amount of prep work on your part.  Unfortunately, this meant a lot very ugly code, performance penalties, and (to add insult to injury) the Android implementation of version 2.3 of Xamarin.Forms broke it for the `Xamarin.Forms.MasterDetailPage`.
-
-As of Forms9Patch version 1.5.0.5,  `Forms9Patch.RootPage` is no longer needed to enable popups **AND** Forms9Patch popups work with pages that have been presented modally.
+Yet another thing missing from Xamarin Forms is a comprehensive set of popup views.  Forms9Patch has a eight (ModalPopup, BubblePopup, FlyoutPopup, Toast, TargetedToast, PermissionPopup, ActivityIndicatorPopup and TargetedMenu) popups to simplify the most common tasks.  However, this comes at a price!  Forms9Patch popups (like a number of other Forms9Patch elements) use Forms9Patch.Image - which means Forms9Patch popups are `IDisposable`.  There is an upside to this.  See the [Memory Management](#memory-management) for more information.
 
 ## Android Note
 
@@ -111,8 +109,8 @@ Sometimes you simply need to put a message up on the screen.  Given some HTML fo
 
 ### Forms9Patch.Toast Unique Properties
 
-- `Title`: The title for the Toast.  See [HTML Markup](Label.md#How-does-Forms9Patch-HTML-Markup-work) for supported markup.
-- `Text`: The text for the Toast.  See [HTML Markup](Label.md#How-does-Forms9Patch-HTML-Markup-work) for supported markup.
+- `Title`: The title for the Toast.  See [HTML Markup](Label.md#how-does-forms9patch-html-markup-work) for supported markup.
+- `Text`: The text for the Toast.  See [HTML Markup](Label.md#how-does-forms9patch-html-markup-work) for supported markup.
 - `ElementShape`: `ElementShape.Rectangle`, `ElementShape.Square`, `ElementShape.Circle`, `ElementShape.Ellipse`, and `ElementShape.Obround`.  Controls the shape of both the border and the background clipping region.
 
 ### Forms9Patch.Toast Unique Methods
@@ -125,8 +123,8 @@ Just as `Toast` is a convenience version of `ModalPopup`, `TargetedToast` is a c
 
 ### Forms9Patch.TargetedToast Unique Properties
 
-- `Title`: The title for the Toast.  See [HTML Markup](Label.md#How-does-Forms9Patch-HTML-Markup-work) for supported markup.
-- `Text`: The text for the Toast.  See [HTML Markup](Label.md#How-does-Forms9Patch-HTML-Markup-work) for supported markup.
+- `Title`: The title for the Toast.  See [HTML Markup](Label.md#how-does-forms9patch-html-markup-work) for supported markup.
+- `Text`: The text for the Toast.  See [HTML Markup](Label.md#how-does-forms9patch-html-markup-work) for supported markup.
 - `Target`: The `Xamarin.Forms.VisualElement` to which the bubble popup will point.
 - `OkButtonColor`: Background color for **[OK]** button.
 - `OkTextColor`: Text color for **[OK]** button.
@@ -142,14 +140,15 @@ Sometimes you simply need to ask a yes/no question.  Given some HTML formatted t
 
 ### Forms9Patch.PermissionPopup Unique Properties
 
-- `Title`: The title for the Toast.  See [HTML Markup](Label.md#How-does-Forms9Patch-HTML-Markup-work) for supported markup.
-- `Text`: The text for the Toast.  See [HTML Markup](Label.md#How-does-Forms9Patch-HTML-Markup-work) for supported markup.
+- `Title`: The title for the Toast.  See [HTML Markup](Label.md#how-does-forms9patch-html-markup-work) for supported markup.
+- `Text`: The text for the Toast.  See [HTML Markup](Label.md#how-does-forms9patch-html-markup-work) for supported markup.
 - `OkButtonColor`: Background color for **[OK]** button.
 - `OkTextColor`: Text color for **[OK]** button.
 - `OKText`: Text for **[OK]** button.
 - `CancelButtonColor`: Background color for **[Cancel]** button.
 - `CancelTextColor`: Text color for **[Cancel]** button.
 - `CancelText`: Text for **[Cancel]** button.
+- `PermissionState`: An enum (`Pending`, `Ok`, `Cancelled`, `Rejected`) describing the state of the permission granting process.  This is very useful when the `PermissionPopup` is wrapped in a `using` block and is examined after a `WaitForCancelAsync()` call.
 
 ### Forms9Patch.PermissionPopup Unique Methods
 
@@ -197,3 +196,50 @@ Note that
 ### Forms9Patch.ActivityIndicatorPopup Events
 
 - `Cancelled`: Called when the popup has been canceled by the user tapping outside its bounds.
+
+## Memory Management
+
+With all Forms9Patch popup's, the good news is the `using` keyword will make your life much easier.  Additionally, Forms9Patch popups have the `WaitForPoppedAsync` method to allow you to interact with the popup's content before disposal.
+
+Forms9Patch.Toast is the simplest example:
+
+```
+    using (Forms9Patch.Toast.Create("Updated","The list was updated.")) { }
+```
+
+In the above example, we're presenting a Toast and there is no need for our code to interact with its content.  As such, the `using` statement attempts to `Dipose()` our Toast as soon as it can.  This all happens because all Forms9Patch popups automatically add a `WaitForPoppedAsync()` before completing the `Dispose()`.  In other words, the popup won't be disposed until the user takes action to dismiss the popup.
+
+As a more interesting example, take a look at a sample usage of Forms9Patch.PermissionPopup:
+
+```
+    using (var permissionPopup = Forms9Patch.PermissionPopup.Create(
+        "Unit Mismatch",
+        Items.Count((i) => !i.IsTemplate) > 1
+            ? "This entry (" + operand.ToHtml() + ") does not have units but the existing Cumulative Memory entries do."
+            : "This entry (" + operand.ToHtml() + ") does not have units but the existing Cumulative Memory entry does.",
+        "YES"))
+    {
+        permissionPopup.Text += "\n\nDo you want to apply the last Cumulative Memory entry's units [" + firstItem.Value.UnitSet + "] to this entry?";
+        permissionPopup.Parameter = operand;
+        permissionPopup.IsVisible = true;
+        await permissionPopup.WaitForPoppedAsync();
+        if (permissionPopup.PermissionState == PermissionState.Ok)
+        {
+            if (operand is Expression expression)
+                expression.Complete();
+            operand.ApplyUnitSet(firstItem.Value.UnitSet);
+            return true;
+        }
+    }
+```
+
+In the above example, you can see that we are able to manipulate `permissionPopup` and subscribe to its events.  And, because `await WaitForePoppedAsync()` is part of its `Dispose()`, our subscriptions will remain valid up until the user interaction has been completed.
+
+Please note that `ActivityIndicatorPopup` is slightly different.  That is because it can only be cancelled programmatically - not through direct user interaction.   With that in mind and for ease of use, calling `Dispose()` on an `ActivityIndicatorPopup` will first implicitly call `CancelAsync` on the `ActivityIndicatorPopup` before it is disposed.  This means you can use the asynchronous calls in the `using` block to  implicitly control the appearance / disappearance / disposal of the `ActivityIndicatorPopup`.  In the below example, the `Create()` factory method generates the `ActivityIndicatorPopup` and displays it.  Then, after the `GetDataAsync()` has completed, the `using` block calls `Dispose()` on our `ActivityIndicatorPopup` - implicitly cancelling it before the disposal.
+
+```
+    using (Forms9Patch.ActivityIndicatorPopup.Create())
+    {
+        await GetDataAsync();
+    }
+```

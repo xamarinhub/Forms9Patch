@@ -1,10 +1,13 @@
 ﻿using System;
+using System.ComponentModel;
 using Xamarin.Forms;
 namespace Forms9Patch
 {
     /// <summary>
     /// Activity indicator full page overlay.
     /// </summary>
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     public class ActivityIndicatorPopup : ModalPopup
     {
         #region Properties
@@ -33,27 +36,71 @@ namespace Forms9Patch
         readonly ActivityIndicator _indicator = new ActivityIndicator
         {
             BackgroundColor = Color.Transparent,
-            Color = Color.Blue,
+            Color = Color.Blue
+        };
+
+
+        /*
+        internal readonly Xamarin.Forms.Grid Grid = new Xamarin.Forms.Grid
+        {
 
         };
+
+        internal readonly Xamarin.Forms.WebView WebView = new Xamarin.Forms.WebView()
+        {
+            Opacity = 0.01
+        };
+        */
         #endregion
 
 
         #region Factory
         /// <summary>
-        /// Create this instance.
+        /// Presents an Activity Indicator Page Overlay
         /// </summary>
-        public static ActivityIndicatorPopup Create()
-         => new ActivityIndicatorPopup { IsVisible = true };
+        /// <param name="popAfter"></param>
+        /// <returns></returns>
+        public static ActivityIndicatorPopup Create(TimeSpan popAfter = default)
+            => new ActivityIndicatorPopup(popAfter) { IsVisible = true };
+
+        /// <summary>
+        /// Presents an Activity Indicator Page Overlay
+        /// </summary>
+        /// <param name="color"></param>
+        /// <param name="popAfter"></param>
+        /// <returns></returns>
+        public static ActivityIndicatorPopup Create(Color color, TimeSpan popAfter = default)
+            => new ActivityIndicatorPopup(color, popAfter) { IsVisible = true };
         #endregion
 
 
         #region Constructor
         /// <summary>
+        /// Constructs an ActivityIndicator Popup
+        /// </summary>
+        /// <param name="color"></param>
+        /// <param name="popAfter"></param>
+        public ActivityIndicatorPopup(Color color, TimeSpan popAfter = default) : this(popAfter)
+        {
+            Color = color;
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="T:Forms9Patch.ActivityIndicatorPopup"/> class.
         /// </summary>
-        public ActivityIndicatorPopup()
+        /// <param name="popAfter"></param>
+        public ActivityIndicatorPopup(TimeSpan popAfter = default) : base(popAfter)
         {
+            /*
+            if (Device.RuntimePlatform == Device.UWP)
+                Grid.WidthRequest = 300;
+
+            Grid.Children.Add(WebView);
+            Grid.Children.Add(_indicator);
+
+            Content = Grid;
+            */
+
             if (Device.RuntimePlatform == Device.UWP)
                 _indicator.WidthRequest = 300;
             Content = _indicator;
@@ -63,9 +110,7 @@ namespace Forms9Patch
             HorizontalOptions = LayoutOptions.Center;
             VerticalOptions = LayoutOptions.Center;
             _indicator.IsVisible = true;
-
         }
-
         #endregion
 
 
@@ -76,26 +121,23 @@ namespace Forms9Patch
         /// <param name="propertyName">Property name.</param>
         protected override void OnPropertyChanged(string propertyName = null)
         {
-            if (!P42.Utils.Environment.IsOnMainThread)
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
             {
-                Device.BeginInvokeOnMainThread(() => OnPropertyChanged(propertyName));
-                return;
-            }
+                base.OnPropertyChanged(propertyName);
 
-            base.OnPropertyChanged(propertyName);
-
-            if (propertyName == IsVisibleProperty.PropertyName)
-                Activate();
-            else if (propertyName == ScaleProperty.PropertyName)
-                _indicator.Scale = Scale;
+                if (propertyName == IsVisibleProperty.PropertyName)
+                    Activate();
+                else if (propertyName == ScaleProperty.PropertyName)
+                    _indicator.Scale = Scale;
+            });
         }
 
         void Activate()
         {
-            if (P42.Utils.Environment.IsOnMainThread)
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
+            {
                 _indicator.IsRunning = IsVisible;
-            else
-                Device.BeginInvokeOnMainThread(Activate);
+            });
         }
         #endregion
     }

@@ -1,16 +1,16 @@
-﻿using System;
-using System.Collections.ObjectModel;
-using System.Runtime.CompilerServices;
-using Xamarin.Forms;
+﻿using Xamarin.Forms;
 using Xamarin.Forms.Internals;
-//using Xamarin.Forms.Grid;
+using System.ComponentModel;
 
 namespace Forms9Patch
 {
+
     /// <summary>
     /// Forms9Patch Grid layout.
     /// </summary>
-    public class Grid : Layout<Xamarin.Forms.Grid>, IGridController, IElementConfiguration<Xamarin.Forms.Grid>, IElementConfiguration<Forms9Patch.Grid>
+    [Preserve (AllMembers = true)]
+    [DesignTimeVisible(true)]
+    public class Grid : Layout<Xamarin.Forms.Grid>, IGridController, IElementConfiguration<Xamarin.Forms.Grid>, IElementConfiguration<Grid>
     {
         /// <summary>
         /// Backing store for the row spacing property.
@@ -182,12 +182,6 @@ namespace Forms9Patch
 
         Xamarin.Forms.Grid _grid => _xfLayout as Xamarin.Forms.Grid;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="T:Forms9Patch.Grid"/> class.
-        /// </summary>
-        public Grid()
-        {
-        }
     }
 }
 

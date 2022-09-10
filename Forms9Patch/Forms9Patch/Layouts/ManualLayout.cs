@@ -1,10 +1,14 @@
 using System;
 using Xamarin.Forms;
+using System.ComponentModel;
+
 namespace Forms9Patch
 {
     /// <summary>
     /// Manual layout.
     /// </summary>
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     public class ManualLayout : Xamarin.Forms.Layout<View>, ILayout
     {
         static ManualLayout()
@@ -125,7 +129,7 @@ namespace Forms9Patch
         /// <summary>
         /// The boarder color property.
         /// </summary>
-        public static readonly BindableProperty BorderColorProperty = ShapeBase.OutlineColorProperty;
+        public static readonly BindableProperty BorderColorProperty = ShapeBase.BorderColorProperty;
         /// <summary>
         /// Gets or sets the color of the boarder.
         /// </summary>
@@ -154,7 +158,7 @@ namespace Forms9Patch
         /// <summary>
         /// The boarder radius property.
         /// </summary>
-        public static readonly BindableProperty BorderRadiusProperty = ShapeBase.OutlineRadiusProperty;
+        public static readonly BindableProperty BorderRadiusProperty = ShapeBase.BorderRadiusProperty;
         /// <summary>
         /// Gets or sets the boarder radius.
         /// </summary>
@@ -183,15 +187,15 @@ namespace Forms9Patch
         /// <summary>
         /// The boarder width property.
         /// </summary>
-        public static readonly BindableProperty BorderWidthProperty = ShapeBase.OutlineWidthProperty;
+        public static readonly BindableProperty BorderWidthProperty = ShapeBase.BorderWidthProperty;
         /// <summary>
         /// Gets or sets the width of the boarder.
         /// </summary>
         /// <value>The width of the boarder.</value>
         public float BorderWidth
         {
-            get => (float)GetValue(OutlineWidthProperty);
-            set => SetValue(OutlineWidthProperty, value);
+            get => (float)GetValue(BorderWidthProperty);
+            set => SetValue(BorderWidthProperty, value);
         }
         #endregion OutlineWidth property
 
@@ -316,16 +320,17 @@ namespace Forms9Patch
         /// </summary>
         protected override void OnPropertyChanged(string propertyName = null)
         {
-            if (!P42.Utils.Environment.IsOnMainThread)
-            {
-                Device.BeginInvokeOnMainThread(() => OnPropertyChanged(propertyName));
-                return;
-            }
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
+            { 
+                try
+                {
+                    base.OnPropertyChanged(propertyName);
+                }
+                catch (Exception) { }
 
-            base.OnPropertyChanged(propertyName);
-
-            if (propertyName == HasShadowProperty.PropertyName)
-                InvalidateMeasure();
+                if (propertyName == HasShadowProperty.PropertyName)
+                    InvalidateMeasure();
+            });
         }
         #endregion
 
@@ -408,6 +413,15 @@ namespace Forms9Patch
             Y = y;
             Width = width;
             Height = height;
+        }
+
+        /// <summary>
+        /// Formats content for display
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return "[" + X + "," + Y + "," + Width + "," + Height + "]";
         }
     }
     #endregion

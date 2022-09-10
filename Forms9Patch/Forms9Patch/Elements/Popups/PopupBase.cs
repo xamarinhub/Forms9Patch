@@ -1,11 +1,13 @@
-using Xamarin.Forms;
+﻿using Xamarin.Forms;
 using System;
 using System.ComponentModel;
-using Rg.Plugins.Popup.Extensions;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using P42.Utils;
+using Forms9Patch.Elements.Popups.Core;
+using System.Collections.Generic;
 
 namespace Forms9Patch
 {
@@ -15,7 +17,7 @@ namespace Forms9Patch
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
     [ContentProperty(nameof(ContentView))]
-    public abstract class PopupBase : Rg.Plugins.Popup.Pages.PopupPage, IPopup, IDisposable
+    public abstract class PopupBase : PopupPage, IPopup, IDisposable
 
     {
         /// <summary>
@@ -27,8 +29,8 @@ namespace Forms9Patch
         /// </summary>
         public new bool IsAnimationEnabled
         {
-            get => (bool)GetValue(PopupBase.IsAnimationEnabledProperty);
-            set => SetValue(PopupBase.IsAnimationEnabledProperty, value);
+            get => (bool)GetValue(IsAnimationEnabledProperty);
+            set => SetValue(IsAnimationEnabledProperty, value);
         }
 
         #region IPopup
@@ -95,7 +97,6 @@ namespace Forms9Patch
             get => (LayoutOptions)GetValue(HorizontalOptionsProperty);
             set => SetValue(HorizontalOptionsProperty, value);
         }
-
         #endregion HorizontalOptions
 
         #region VerticalOptions
@@ -118,7 +119,7 @@ namespace Forms9Patch
         /// <summary>
         /// The target property.
         /// </summary>
-        public static readonly BindableProperty TargetProperty = BindableProperty.Create("Forms9Patch.PopupBase.Target", typeof(VisualElement), typeof(PopupBase), default(Element));
+        public static readonly BindableProperty TargetProperty = BindableProperty.Create(nameof(Target), typeof(VisualElement), typeof(PopupBase), default(Element));
         /// <summary>
         /// Gets or sets the popup target (could be a Page or a VisualElement on a Page).
         /// </summary>
@@ -135,7 +136,7 @@ namespace Forms9Patch
         /// Identifies the PageOverlayColor bindable property.
         /// </summary>
         /// <remarks>To be added.</remarks>
-        public static readonly BindableProperty PageOverlayColorProperty = BindableProperty.Create("Forms9Patch.PopupBase.PageOverlayColor", typeof(Color), typeof(PopupBase), Color.FromRgba(128, 128, 128, 128));
+        public static readonly BindableProperty PageOverlayColorProperty = BindableProperty.Create(nameof(PageOverlayColor), typeof(Color), typeof(PopupBase), Color.FromRgba(128, 128, 128, 128));
         /// <summary>
         /// Gets or sets the color of the page overlay.
         /// </summary>
@@ -151,7 +152,7 @@ namespace Forms9Patch
         /// <summary>
         /// Cancel the Popup when the PageOverlay is touched
         /// </summary>
-        public static readonly BindableProperty CancelOnPageOverlayTouchProperty = BindableProperty.Create("Forms9Patch.PopupBase.CancelOnPageOverlayTouch", typeof(bool), typeof(PopupBase), true);
+        public static readonly BindableProperty CancelOnPageOverlayTouchProperty = BindableProperty.Create(nameof(CancelOnPageOverlayTouch), typeof(bool), typeof(PopupBase), true);
         /// <summary>
         /// Gets or sets a value indicating whether Popup <see cref="T:Forms9Patch.PopupBase"/> will cancel on page overlay touch.
         /// </summary>
@@ -167,7 +168,7 @@ namespace Forms9Patch
         /// <summary>
         /// Cancel the Popup when the back button is touched
         /// </summary>
-        public static readonly BindableProperty CancelOnBackButtonClickProperty = BindableProperty.Create("Forms9Patch.PopupBase.CancelOnBackButtonClick", typeof(bool), typeof(PopupBase), true);
+        public static readonly BindableProperty CancelOnBackButtonClickProperty = BindableProperty.Create(nameof(CancelOnBackButtonClick), typeof(bool), typeof(PopupBase), true);
         /// <summary>
         /// Gets or sets a value indicating whether Popup <see cref="T:Forms9Patch.PopupBase"/> will cancel on the back button touch.
         /// </summary>
@@ -179,29 +180,13 @@ namespace Forms9Patch
         }
         #endregion CancelOnBackButtonClick
 
-        #region Retain
-        /// <summary>
-        /// The retain property.
-        /// </summary>
-        public static readonly BindableProperty RetainProperty = BindableProperty.Create("Forms9Patch.PopupBase.Retain", typeof(bool), typeof(PopupBase), default(bool));
-        /// <summary>
-        /// Gets or sets a value indicating whether this <see cref="T:Forms9Patch.PopupBase"/> is retained after it is hidden.
-        /// </summary>
-        /// <value><c>true</c> if retain; otherwise, <c>false</c>.</value>
-        public bool Retain
-        {
-            get => (bool)GetValue(RetainProperty);
-            set => SetValue(RetainProperty, value);
-        }
-        #endregion Retail
-
         #region PopAfter property
         /// <summary>
-        /// Backing store for PopAfter property
+        /// BindableProperty key for PopAfter property
         /// </summary>
-        public static readonly BindableProperty PopAfterProperty = BindableProperty.Create("Forms9Patch.PopupBase.PopAfter", typeof(TimeSpan), typeof(PopupBase), default(TimeSpan));
+        public static readonly BindableProperty PopAfterProperty = BindableProperty.Create(nameof(PopAfter), typeof(TimeSpan), typeof(PopupBase), default(TimeSpan));
         /// <summary>
-        /// Will cause the popup to cancel (disappear) after Popafter TimeSpan
+        /// Duration of popup appearance before it is automatically cancelled
         /// </summary>
         public TimeSpan PopAfter
         {
@@ -209,6 +194,30 @@ namespace Forms9Patch
             set => SetValue(PopAfterProperty, value);
         }
         #endregion PopAfter property
+
+        #region Parameter property
+        /// <summary>
+        /// BindableProperty key for Parameter property
+        /// </summary>
+        public static readonly BindableProperty ParameterProperty = BindableProperty.Create(nameof(Parameter), typeof(object), typeof(PopupBase), default);
+        /// <summary>
+        /// Object that can be set prior to appearance of Popup for the purpose of application to processing after the popup is disappeared;
+        /// </summary>
+        public object Parameter
+        {
+            get => GetValue(ParameterProperty);
+            set => SetValue(ParameterProperty, value);
+        }
+        #endregion Parameter property
+
+        #region PushedFeedback Property
+        /// <summary>         /// The PushedFeedback property backing store.         /// </summary>         public static readonly BindableProperty PushedFeedbackProperty = BindableProperty.Create(nameof(PushedFeedback), typeof(FeedbackEffect), typeof(PopupBase), default(FeedbackEffect));
+                /// <summary>         /// Gets or sets the PushedFeedback value.         /// </summary>         /// <value>The PushedFeedback.</value>         public FeedbackEffect PushedFeedback{
+            get => (FeedbackEffect)GetValue(PushedFeedbackProperty);
+            set => SetValue(PushedFeedbackProperty, value);
+        }
+        #endregion PushedFeedback Property
+
 
         #region IBackground
 
@@ -223,7 +232,7 @@ namespace Forms9Patch
         /// <value>The background image.</value>
         public new Image BackgroundImage
         {
-            get => (Forms9Patch.Image)GetValue(BackgroundImageProperty);
+            get => (Image)GetValue(BackgroundImageProperty);
             set => SetValue(BackgroundImageProperty, value);
         }
         #endregion BackgroundImage
@@ -294,7 +303,7 @@ namespace Forms9Patch
         /// <summary>
         /// The boarder color property.
         /// </summary>
-        public static readonly BindableProperty BorderColorProperty = ShapeBase.OutlineColorProperty;
+        public static readonly BindableProperty BorderColorProperty = ShapeBase.BorderColorProperty;
         /// <summary>
         /// Gets or sets the color of the boarder.
         /// </summary>
@@ -324,7 +333,7 @@ namespace Forms9Patch
         /// <summary>
         /// The boarder radius property.
         /// </summary>
-        public static readonly BindableProperty BorderRadiusProperty = ShapeBase.OutlineRadiusProperty;
+        public static readonly BindableProperty BorderRadiusProperty = ShapeBase.BorderRadiusProperty;
         /// <summary>
         /// Gets or sets the boarder radius.
         /// </summary>
@@ -353,15 +362,15 @@ namespace Forms9Patch
         /// <summary>
         /// The boarder width property.
         /// </summary>
-        public static readonly BindableProperty BorderWidthProperty = ShapeBase.OutlineWidthProperty;
+        public static readonly BindableProperty BorderWidthProperty = ShapeBase.BorderWidthProperty;
         /// <summary>
         /// Gets or sets the width of the boarder.
         /// </summary>
         /// <value>The width of the boarder.</value>
         public float BorderWidth
         {
-            get => (float)GetValue(OutlineWidthProperty);
-            set => SetValue(OutlineWidthProperty, value);
+            get => (float)GetValue(BorderWidthProperty);
+            set => SetValue(BorderWidthProperty, value);
         }
         #endregion OutlineWidth property
 
@@ -432,8 +441,18 @@ namespace Forms9Patch
                     oldLayout.PropertyChanged -= OnContentViewPropertyChanged;
                 _decorativeContainerView = (ILayout)value;
                 if (_decorativeContainerView is VisualElement newLayout)
+                {
+                    _decorativeContainerView.Padding = Padding;
+                    _decorativeContainerView.BackgroundColor = (BackgroundColor == Color.Default || BackgroundColor == default ? Color.White : BackgroundColor);
+                    _decorativeContainerView.HasShadow = HasShadow;
+                    _decorativeContainerView.ShadowInverted = ShadowInverted;
+                    _decorativeContainerView.OutlineColor = OutlineColor;
+                    _decorativeContainerView.OutlineWidth = OutlineWidth;
+                    _decorativeContainerView.OutlineRadius = OutlineRadius;
+                    _decorativeContainerView.ElementShape = ElementShape;
                     newLayout.PropertyChanged += OnContentViewPropertyChanged;
-                base.Content = _decorativeContainerView as View;
+                }
+                Content = _decorativeContainerView as View;
                 _decorativeContainerView.IgnoreChildren = false;
 
             }
@@ -453,6 +472,27 @@ namespace Forms9Patch
         /// Occurs when popup has popped;
         /// </summary>
         public event EventHandler<PopupPoppedEventArgs> Popped;
+
+        /// <summary>
+        /// Occurs when popup appearing animation has started
+        /// </summary>
+        public event EventHandler AppearingAnimationBegin;
+
+        /// <summary>
+        /// Occurs when popup appearing animation has ended
+        /// </summary>
+        public event EventHandler AppearingAnimationEnd;
+
+        /// <summary>
+        /// occurs when popup disappearing animation has started
+        /// </summary>
+        public event EventHandler DisappearingAnimationBegin;
+
+        /// <summary>
+        /// Occurs when popup disappearing animation has ended
+        /// </summary>
+        public event EventHandler DisappearingAnimationEnd;
+
         #endregion
 
 
@@ -460,28 +500,37 @@ namespace Forms9Patch
         internal ILayout _decorativeContainerView;
         internal DateTime PresentedAt;
         static int _instances;
-        readonly int _id;
+        /// <summary>
+        /// Incremental identifier;
+        /// </summary>
+        protected readonly int _id;
         /// <summary>
         /// Say, when was the last time I ...
         /// </summary>
-        protected DateTime _lastLayout = DateTime.MinValue;
+        protected DateTime _lastLayout = DateTime.MinValue.AddYears(1);
         PopupPoppedEventArgs PopupPoppedEventArgs;
         #endregion
 
 
-        #region Constructor
+        #region Construction / Disposal
         static PopupBase()
         {
             Settings.ConfirmInitialization();
         }
 
         /// <summary>
+        /// Initializes new instance of the PopupBase class.
+        /// </summary>
+        /// <param name="segment"></param>
+        /// <param name="popAfter"></param>
+        internal PopupBase(Segment segment, TimeSpan popAfter = default) : this(segment._button, popAfter) { }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="T:Forms9Patch.PopupBase"/> class.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="retain">If set to <c>true</c> retain.</param>
         /// <param name="popAfter">Pop after TimeSpan.</param>
-        internal PopupBase(VisualElement target = null, bool retain = false, TimeSpan popAfter = default)
+        internal PopupBase(VisualElement target = null, TimeSpan popAfter = default)
         {
             HorizontalOptions = LayoutOptions.Center;
             VerticalOptions = LayoutOptions.Center;
@@ -494,7 +543,6 @@ namespace Forms9Patch
             OutlineRadius = 5;
 
             _id = _instances++;
-            Retain = retain;
             IsVisible = false;
             Target = target;
 
@@ -504,13 +552,90 @@ namespace Forms9Patch
 
             PopAfter = popAfter;
 
-
+            HasKeyboardOffset = true;
         }
 
+
+        bool _disposed; // To detect redundant calls
+
+        /// <summary>
+        /// Clean up unmanaged objects
+        /// </summary>
+        /// <param name="disposing">Disposing.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed && disposing)
+            {
+                _disposed = true;
+
+                Cancelled = null;
+                Popped = null;
+                AppearingAnimationBegin = null;
+                AppearingAnimationEnd = null;
+                DisappearingAnimationBegin = null;
+                DisappearingAnimationEnd = null;
+
+                if (_decorativeContainerView is VisualElement oldLayout)
+                    oldLayout.PropertyChanged -= OnContentViewPropertyChanged;
+
+                KeyboardService.HeightChanged -= OnKeyboardHeightChanged;
+                Parameter = null;
+
+                if (_decorativeContainerView is IDisposable disposable)
+                    disposable.Dispose();
+
+                try
+                {
+                    _semaphore.Dispose();
+                }
+#pragma warning disable RECS0022 // A catch clause that catches System.Exception and has an empty body
+                catch (Exception) { }
+#pragma warning restore RECS0022 // A catch clause that catches System.Exception and has an empty body
+            }
+        }
+
+
+        /// <summary>
+        /// Releases all resource used by the <see cref="T:Forms9Patch.PopupBase"/> object.
+        /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1063:Implement IDisposable Correctly", Justification = "Disposal handled in Device.BeginInvokeOnMainThread block")]
+        public void Dispose()
+        {
+            if (_isPopped || (!_isPushing && !_isPushed))
+            {
+                Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() => Dispose(true));
+
+                GC.SuppressFinalize(this);
+            }
+            else
+#pragma warning disable RECS0165 // Asynchronous methods should return a Task instead of void
+                Device.BeginInvokeOnMainThread((Action)(async () =>
+#pragma warning restore RECS0165 // Asynchronous methods should return a Task instead of void
+                {
+                    if (GetType() == typeof(ActivityIndicatorPopup))
+                        await CancelAsync(PopupPoppedCause.Disposed);
+                    await WaitForPoppedAsync();
+                    await Task.Delay(50);
+                    Dispose();
+                }));
+        }
         #endregion
 
 
         #region Cancelation
+        /// <summary>
+        /// Delay until the popup is popped.
+        /// </summary>
+        /// <returns>Why the popup was popped and, if appropriate, what triggered it.</returns>
+        public virtual async Task<PopupPoppedEventArgs> WaitForPoppedAsync()
+        {
+            while (!_isPopped)
+                await Task.Delay(50);
+            var args = PopupPoppedEventArgs;
+            PopupPoppedEventArgs = null;
+            return args;
+        }
+
 
         /// <summary>
         /// Called when back button is pressed
@@ -518,7 +643,7 @@ namespace Forms9Patch
         /// <returns></returns>
         protected override bool OnBackButtonPressed()
         {
-            //wSystem.Diagnostics.Debug.WriteLine(GetType() + "." + P42.Utils.ReflectionExtensions.CallerMemberName());
+            //wSystem.Diagnostics.Debug.WriteLine(GetType() + "." + ReflectionExtensions.CallerMemberName());
             if (CancelOnBackButtonClick)
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                 CancelAsync(PopupPoppedCause.HardwareBackButtonPressed);
@@ -535,7 +660,7 @@ namespace Forms9Patch
         /// <returns></returns>
         protected override bool OnBackgroundClicked()
         {
-            //System.Diagnostics.Debug.WriteLine(GetType() + "." + P42.Utils.ReflectionExtensions.CallerMemberName());
+            //System.Diagnostics.Debug.WriteLine(GetType() + "." + ReflectionExtensions.CallerMemberName());
             var isClose = base.OnBackgroundClicked();
             if (isClose)
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
@@ -549,74 +674,17 @@ namespace Forms9Patch
         /// </summary>
         /// <returns>Task</returns>
         /// <param name="trigger">Optional, object or PopupEventCause that triggered cancelation.</param>
-        public async Task CancelAsync(object trigger = null)
-        {
-            //System.Diagnostics.Debug.WriteLine(GetType() + "." + P42.Utils.ReflectionExtensions.CallerMemberName());
-            if (P42.Utils.Environment.IsOnMainThread)
-            {
-                if (trigger == null)
-                    await PopAsync(PopupPoppedCause.MethodCalled, P42.Utils.ReflectionExtensions.CallerMemberName());
-                else
-                    await PopAsync(trigger);
-                while (_isPushed)
-                    await Task.Delay(50);
-                Cancelled?.Invoke(this, PopupPoppedEventArgs);
-            }
-            else
-                Device.BeginInvokeOnMainThread(async () => await CancelAsync(trigger));
-        }
+        public virtual async Task CancelAsync(object trigger = null)
+            => await PopAsync(trigger ?? PopupPoppedCause.MethodCalled, lastAction: () => Cancelled?.Invoke(this, PopupPoppedEventArgs));
 
         /// <summary>
         /// Cancels the popup
         /// </summary>
         /// <param name="trigger"></param>
         [Obsolete("Use CancelAsync instead")]
-        public void Cancel(object trigger = null) => Task.Run(async () => await CancelAsync(trigger ?? P42.Utils.ReflectionExtensions.CallerMemberName()));
+        public void Cancel(object trigger = null) => Task.Run(async () => await CancelAsync(trigger ?? ReflectionExtensions.CallerMemberName()));
 
         #endregion
-
-
-        #region IDisposable Support
-        bool _disposed; // To detect redundant calls
-
-        /// <summary>
-        /// Dispose the specified disposing.
-        /// </summary>
-        /// <param name="disposing">Disposing.</param>
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!_disposed && disposing)
-            {
-                _disposed = true;
-                //  Don't want to do this.  Will cause popups to not be reusable by default.
-                //try
-                //{
-                //    if (Content is IDisposable disposable)
-                //        disposable.Dispose();
-                //}
-                //catch (Exception) { }
-                if (_decorativeContainerView is VisualElement oldLayout)
-                    oldLayout.PropertyChanged -= OnContentViewPropertyChanged;
-                KeyboardService.HeightChanged -= OnKeyboardHeightChanged;
-
-
-                _lock.Dispose();
-                Retain = false;
-            }
-        }
-
-        /// <summary>
-        /// Releases all resource used by the <see cref="T:Forms9Patch.PopupBase"/> object.
-        /// </summary>
-        public void Dispose()
-        {
-            if (IsVisible || _isPushing || _isPushed || _isPopping)
-                return;
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-        #endregion
-
 
 
         #region PropertyChange managment
@@ -624,6 +692,7 @@ namespace Forms9Patch
 
         void OnKeyboardHeightChanged(object sender, double e) => OnContentViewPropertyChanged(sender, new PropertyChangedEventArgs(KeyboardServiceHeight));
 
+        /*
         void InitializeILayoutProperties(ILayout layout)
         {
             #region IBackground
@@ -652,15 +721,16 @@ namespace Forms9Patch
             layout.IgnoreChildren = false;
 
             #endregion ILayout
-
         }
+        */
 
         void OnContentViewPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (!P42.Utils.Environment.IsOnMainThread)
-                Device.BeginInvokeOnMainThread(() => OnContentViewPropertyChanged(sender, e));
-            else if (IsVisible && (e.PropertyName == Xamarin.Forms.Layout.PaddingProperty.PropertyName || e.PropertyName == KeyboardServiceHeight))
-                LayoutChildren(X, Y, Width, Height);
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
+            {
+                if (IsVisible && (e.PropertyName == Xamarin.Forms.Layout.PaddingProperty.PropertyName || e.PropertyName == KeyboardServiceHeight))
+                    LayoutChildren(X, Y, Width, Height);
+            });
         }
 
         /// <summary>
@@ -677,38 +747,61 @@ namespace Forms9Patch
         internal protected bool _isPopping;
 
         /// <summary>
+        /// true if Popup is popped;
+        /// </summary>
+        internal protected bool _isPopped;
+
+        /// <summary>
+        /// true if pop animation is complete
+        /// </summary>
+        internal protected bool _popAnimationComplete;
+
+
+        /// <summary>
         /// Called when the popup is starting to appear
         /// </summary>
         protected override void OnAppearingAnimationBegin()
         {
-            if (Device.RuntimePlatform == Device.UWP)
-            {
-                //var mainPage = 
-            }
+            Recursion.Enter(GetType().ToString(), _id.ToString());
+            _isPopped = false;
+            _popAnimationComplete = false;
+            AppearingAnimationBegin?.Invoke(this, EventArgs.Empty);
             _isPushing = true;
             base.OnAppearingAnimationBegin();
+            Recursion.Exit(GetType().ToString(), _id.ToString());
         }
 
+#pragma warning disable RECS0165 // Asynchronous methods should return a Task instead of void
         /// <summary>
         /// Called when the popup has appeared
         /// </summary>
         protected override async void OnAppearingAnimationEnd()
+#pragma warning restore RECS0165 // Asynchronous methods should return a Task instead of void
         {
-            //System.Diagnostics.Debug.WriteLine(GetType() + "." + P42.Utils.ReflectionExtensions.CallerMemberName());
+            //System.Diagnostics.Debug.WriteLine(GetType() + "." + ReflectionExtensions.CallerMemberName());
+            Recursion.Enter(GetType().ToString(), _id.ToString());
+            _isPopping = false;
+            _isPopped = false;
+            _popAnimationComplete = false;
             base.OnAppearingAnimationEnd();
-            _isPushed = true;
             _isPushing = false;
+            _isPushed = true;
+
+            await Task.Delay(TimeSpan.FromSeconds(1));
 
             if (!IsVisible && !_isPopping)
-                await PopAsync(PopupPoppedCause.IsVisiblePropertySet);
+                await CancelAsync(PopupPoppedCause.IsVisiblePropertySet);
             else if (PopAfter > default(TimeSpan))
                 Device.StartTimer(PopAfter, () =>
                 {
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                    PopAsync(PopupPoppedCause.Timeout);
+                    CancelAsync(PopupPoppedCause.Timeout);
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                     return false;
                 });
+
+            AppearingAnimationEnd?.Invoke(this, EventArgs.Empty);
+            Recursion.Exit(GetType().ToString(), _id.ToString());
         }
 
         /// <summary>
@@ -716,10 +809,16 @@ namespace Forms9Patch
         /// </summary>
         protected override void OnDisappearingAnimationBegin()
         {
-            //System.Diagnostics.Debug.WriteLine(GetType() + "." + P42.Utils.ReflectionExtensions.CallerMemberName());
-            _isPopping = true;
+            Recursion.Enter(GetType().ToString(), _id.ToString());
+            _isPopped = false;
+            _popAnimationComplete = false;
+            DisappearingAnimationBegin?.Invoke(this, EventArgs.Empty);
+            //System.Diagnostics.Debug.WriteLine(GetType() + "." + ReflectionExtensions.CallerMemberName());
+            _isPushing = false;
             _isPushed = false;
+            _isPopping = true;
             base.OnDisappearingAnimationBegin();
+            Recursion.Exit(GetType().ToString(), _id.ToString());
         }
 
         /// <summary>
@@ -727,26 +826,24 @@ namespace Forms9Patch
         /// </summary>
         protected override void OnDisappearingAnimationEnd()
         {
-
-            //System.Diagnostics.Debug.WriteLine(GetType() + "." + P42.Utils.ReflectionExtensions.CallerMemberName());
+            Recursion.Enter(GetType().ToString(), _id.ToString());
+            _popAnimationComplete = true;
             base.OnDisappearingAnimationEnd();
-            //IsVisible = false;
+            _isPushing = false;
+            _isPushed = false;
             _isPopping = false;
 
             if (IsVisible && !_isPushing)
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                PushAsync();
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-            //else if (!Retain)
-            //    Device.StartTimer(TimeSpan.FromSeconds(10), () =>
-            //    {
-            //        if (!Retain)
-            //            Dispose();
-            //        return false;
-            //    });
+                PushAsync().ConfigureAwait(false);
+            else
+            {
+                _isPopped = true;
+                DisappearingAnimationEnd?.Invoke(this, EventArgs.Empty);
+            }
+            Recursion.Exit(GetType().ToString(), _id.ToString());
         }
 
-        readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
+        readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
         /// <summary>
         /// Obsolete.  Use PushAsync instead
@@ -755,46 +852,51 @@ namespace Forms9Patch
         [Obsolete("Use PushAsync instead")]
         public async Task Push()
         {
-            //System.Diagnostics.Debug.WriteLine(GetType() + "." + P42.Utils.ReflectionExtensions.CallerMemberName());
+            //System.Diagnostics.Debug.WriteLine(GetType() + "." + ReflectionExtensions.CallerMemberName());
             await PushAsync();
         }
+
 
         //bool _isPushing;
         /// <summary>
         /// Push the popup asynchronously
         /// </summary>
         /// <returns></returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Potential Code Quality Issues", "RECS0022:A catch clause that catches System.Exception and has an empty body", Justification = "<Pending>")]
         public async Task PushAsync()
         {
-            //System.Diagnostics.Debug.WriteLine(GetType() + "." + P42.Utils.ReflectionExtensions.CallerMemberName());
+            //System.Diagnostics.Debug.WriteLine(GetType() + "." + ReflectionExtensions.CallerMemberName());
             // do not use the following ... it will prevent popups from appearing when quickly showing and hiding
-            //if (!Rg.Plugins.Popup.Services.PopupNavigation.Instance.PopupStack.Contains(this))
+            //System.Diagnostics.Debug.WriteLine("PUSH");
+            IsVisible = true;
+            //if (_isPushing || _isPushed)
+            //    return;
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(async () =>
             {
-                //System.Diagnostics.Debug.WriteLine("PUSH");
-                IsVisible = true;
-                //if (_isPushing || _isPushed)
-                //    return;
-                if (P42.Utils.Environment.IsOnMainThread)
-                {
-                    //_isPushing = true;
-                    //while (_isPoping) await Task.Delay(100);
-                    //if (IsVisible)
-                    await _lock.WaitAsync();
+                Recursion.Enter(GetType().ToString(), _id.ToString());
+                //_isPushing = true;
+                //while (_isPoping) await Task.Delay(100);
+                //if (IsVisible)
+                await _semaphore.WaitAsync();
 
-                    if (!Rg.Plugins.Popup.Services.PopupNavigation.Instance.PopupStack.Contains(this))
-                    {
-                        PopupPoppedEventArgs = null;
-                        _isPushing = true;
-                        base.IsAnimationEnabled = IsAnimationEnabled;
-                        await Navigation.PushPopupAsync(this);
-                        PopupLayerEffect.ApplyTo(this);
-                    }
-                    //_isPushing = false;
-                    _lock.Release();
+                if (!PopupNavigation.Instance.PopupStack.Contains(this))
+                {
+                    PopupPoppedEventArgs = null;
+                    _isPushing = true;
+                    base.IsAnimationEnabled = IsAnimationEnabled;
+                    await Navigation.PushPopupAsync(this);
+                    Feedback.Play(PushedFeedback);
+                    PopupLayerEffect.ApplyTo(this);
                 }
-                else
-                    Device.BeginInvokeOnMainThread(async () => await PushAsync());
-            }
+                try
+                {
+                    if (!_disposed)
+                        _semaphore.Release();
+                }
+                catch (Exception) { }
+                Recursion.Exit(GetType().ToString(), _id.ToString());
+            });
+
         }
 
         /// <summary>
@@ -805,12 +907,13 @@ namespace Forms9Patch
         [Obsolete("Use PopAsync instead")]
         public async Task Pop(object trigger = null)
         {
-            //System.Diagnostics.Debug.WriteLine(GetType() + "." + P42.Utils.ReflectionExtensions.CallerMemberName());
+            //System.Diagnostics.Debug.WriteLine(GetType() + "." + ReflectionExtensions.CallerMemberName());
             if (trigger == null)
-                await PopAsync(PopupPoppedCause.MethodCalled, P42.Utils.ReflectionExtensions.CallerMemberName());
+                await PopAsync(PopupPoppedCause.MethodCalled, ReflectionExtensions.CallerMemberName());
             else
                 await PopAsync(trigger);
         }
+
 
 
         /// <summary>
@@ -818,32 +921,63 @@ namespace Forms9Patch
         /// </summary>
         /// <param name="trigger"></param>
         /// <param name="callerName"></param>
+        /// <param name="lastAction"></param>
         /// <returns></returns>
-        public async Task PopAsync(object trigger = null, [CallerMemberName] string callerName = "")
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Potential Code Quality Issues", "RECS0022:A catch clause that catches System.Exception and has an empty body", Justification = "<Pending>")]
+        public async Task PopAsync(object trigger = null, [CallerMemberName] string callerName = "", Action lastAction = null)
         {
             // do not use the following ... it will prevent popups from appearing when quickly showing and hiding
-            //if (Rg.Plugins.Popup.Services.PopupNavigation.Instance.PopupStack.Contains(this))
+            //System.Diagnostics.Debug.WriteLine(GetType() + "." + ReflectionExtensions.CallerMemberName());
+            if (P42.Utils.Environment.IsOnMainThread)
             {
-                //System.Diagnostics.Debug.WriteLine(GetType() + "." + P42.Utils.ReflectionExtensions.CallerMemberName());
-                if (P42.Utils.Environment.IsOnMainThread)
+                Recursion.Enter(GetType(), _id);
+
+                IsVisible = false;
+                try
                 {
-                    _isPopping = true;
-                    IsVisible = false;
-                    await _lock.WaitAsync();
-                    if (Rg.Plugins.Popup.Services.PopupNavigation.Instance.PopupStack.Contains(this) && PopupPoppedEventArgs == null)
+                    if (PopupPoppedEventArgs == null
+                        && _semaphore is SemaphoreSlim semaphore
+                        && PopupNavigation.Instance?.PopupStack is IReadOnlyList<PopupPage> popupStack
+                        && popupStack.Contains(this)
+                        && Navigation is INavigation navigation)
                     {
+                        await semaphore.WaitAsync();
                         _isPopping = true;
                         SetPopupPoppedEventArgs(trigger, callerName);
                         PopupLayerEffect.RemoveFrom(this);
                         base.IsAnimationEnabled = IsAnimationEnabled;
-                        await Navigation.RemovePopupPageAsync(this);
+                        await navigation.RemovePopupPageAsync(this);
+                        try
+                        {
+                            if (!_disposed)
+                                semaphore.Release();
+                        }
+                        catch (Exception) { }
                         Popped?.Invoke(this, PopupPoppedEventArgs);
                     }
-                    _lock.Release();
                 }
-                else
-                    Device.BeginInvokeOnMainThread(async () => await PopAsync(trigger, callerName));
+                catch (ObjectDisposedException)
+                {
+                    Recursion.Exit(GetType(), _id);
+                    return;
+                }
+
+                lastAction?.Invoke();
+
+                if (_isPopping)
+                    do
+                    {
+                        await Task.Delay(100);
+                    }
+                    while (/*PopupNavigation.Instance.PopupStack.Contains(this) && */!_popAnimationComplete);
+
+                Recursion.Exit(GetType(), _id);
             }
+            else
+#pragma warning disable RECS0165 // Asynchronous methods should return a Task instead of void
+                Device.BeginInvokeOnMainThread(async () => await PopAsync(trigger, callerName));
+#pragma warning restore RECS0165 // Asynchronous methods should return a Task instead of void
+
         }
 
 
@@ -864,18 +998,6 @@ namespace Forms9Patch
                 PopupPoppedEventArgs = new PopupPoppedEventArgs(PopupPoppedCause.Custom, trigger);
         }
 
-        /// <summary>
-        /// Delay until the popup is popped.
-        /// </summary>
-        /// <returns>Why the popup was popped and, if appropriate, what triggered it.</returns>
-        public virtual async Task<PopupPoppedEventArgs> DelayUntilPoppedAsync()
-        {
-            while (PopupPoppedEventArgs == null)
-                await Task.Delay(50);
-            var args = PopupPoppedEventArgs;
-            PopupPoppedEventArgs = null;
-            return args;
-        }
 
         /// <param name="propertyName">The name of the property that changed.</param>
         /// <summary>
@@ -883,98 +1005,87 @@ namespace Forms9Patch
         /// </summary>
         protected override void OnPropertyChanged(string propertyName = null)
         {
-            if (!P42.Utils.Environment.IsOnMainThread)
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
             {
-                Device.BeginInvokeOnMainThread(() => OnPropertyChanged(propertyName));
-                return;
-            }
 
-            base.OnPropertyChanged(propertyName);
-
-            if (propertyName == PageOverlayColorProperty.PropertyName)
-                base.BackgroundColor = PageOverlayColor;
-            else if (propertyName == IsAnimationEnabledProperty.PropertyName)
-                base.IsAnimationEnabled = IsAnimationEnabled;
-            else if (propertyName == IsVisibleProperty.PropertyName)
-            {
-                if (IsVisible && !_isPushed)// && PopupPage != null)
+                try
                 {
-                    //System.Diagnostics.Debug.WriteLine(GetType() + "." + P42.Utils.ReflectionExtensions.CallerMemberName() + " IsVisible");
-                    DecorativeContainerView.TranslationX = 0;
-                    DecorativeContainerView.TranslationY = 0;
-                    if (Application.Current.MainPage == null)
+                    base.OnPropertyChanged(propertyName);
+                }
+#pragma warning disable RECS0022 // A catch clause that catches System.Exception and has an empty body
+                catch (Exception) { }
+#pragma warning restore RECS0022 // A catch clause that catches System.Exception and has an empty body
+
+                if (propertyName == PageOverlayColorProperty.PropertyName)
+                    base.BackgroundColor = PageOverlayColor;
+                else if (propertyName == IsAnimationEnabledProperty.PropertyName)
+                    base.IsAnimationEnabled = IsAnimationEnabled;
+                else if (propertyName == IsVisibleProperty.PropertyName)
+                {
+                    if (IsVisible && !_isPushed)// && PopupPage != null)
                     {
-                        IsVisible = false;
-                        return;
+                        //System.Diagnostics.Debug.WriteLine(GetType() + "." + ReflectionExtensions.CallerMemberName() + " IsVisible");
+                        DecorativeContainerView.TranslationX = 0;
+                        DecorativeContainerView.TranslationY = 0;
+                        if (Application.Current?.MainPage == null)
+                        {
+                            IsVisible = false;
+                            return;
+                        }
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                        PushAsync();
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                     }
+                    else if (!IsVisible && _isPushed && !_isPopping)
+                    {
+                        //System.Diagnostics.Debug.WriteLine(GetType() + "." + ReflectionExtensions.CallerMemberName() + " !IsVisible");
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                    PushAsync();
+                        //PopAsync(PopupPoppedCause.IsVisiblePropertySet);
+                        CancelAsync(PopupPoppedCause.IsVisiblePropertySet);
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                    }
+                    //else
+                    //    System.Diagnostics.Debug.WriteLine("IsVisible=[" + IsVisible + "] _isPushed=[" + _isPushed + "]");
                 }
-                else if (!IsVisible && _isPushed && !_isPopping)
-                {
-                    //System.Diagnostics.Debug.WriteLine(GetType() + "." + P42.Utils.ReflectionExtensions.CallerMemberName() + " !IsVisible");
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                    PopAsync(PopupPoppedCause.IsVisiblePropertySet);
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                }
-                //else
-                //    System.Diagnostics.Debug.WriteLine("IsVisible=[" + IsVisible + "] _isPushed=[" + _isPushed + "]");
-            }
-            //else if (propertyName == RetainProperty.PropertyName && !Retain)
-            //    Dispose();
-            else if (propertyName == CancelOnPageOverlayTouchProperty.PropertyName)
-                CloseWhenBackgroundIsClicked = CancelOnPageOverlayTouch;
-
-
-            if (_decorativeContainerView != null)
-            {
-                #region ILayout
-                if (propertyName == PaddingProperty.PropertyName)
-                    _decorativeContainerView.Padding = Padding;
-                #endregion
-
-                #region IBackground
-                else if (propertyName == BackgroundImageProperty.PropertyName)
-                    _decorativeContainerView.BackgroundImage = BackgroundImage;
-
-                #region IShape
-                else if (propertyName == BackgroundColorProperty.PropertyName)
-                    _decorativeContainerView.BackgroundColor = (BackgroundColor == Color.Default || BackgroundColor == default ? Color.White : BackgroundColor);
-                else if (propertyName == HasShadowProperty.PropertyName)
-                    _decorativeContainerView.HasShadow = HasShadow;
-                else if (propertyName == ShadowInvertedProperty.PropertyName)
-                    _decorativeContainerView.ShadowInverted = ShadowInverted;
-                else if (propertyName == OutlineColorProperty.PropertyName)
-                    _decorativeContainerView.OutlineColor = OutlineColor;
-                else if (propertyName == OutlineWidthProperty.PropertyName)
-                    _decorativeContainerView.OutlineWidth = OutlineWidth;
-                else if (propertyName == OutlineRadiusProperty.PropertyName)
-                    _decorativeContainerView.OutlineRadius = OutlineRadius;
-                else if (propertyName == ElementShapeProperty.PropertyName)
-                    _decorativeContainerView.ElementShape = ElementShape;
-                #endregion IShape
-
-                #endregion IBackground
-            }
-
-            /*
-            if (IsVisible)
-                HardForceLayout();
-
-
-            if (propertyName == IsVisibleProperty.PropertyName && IsVisible)
-            {
-                Device.StartTimer(TimeSpan.FromMilliseconds(refreshPeriod), () =>
-                {
+                else if (propertyName == CancelOnPageOverlayTouchProperty.PropertyName)
+                    CloseWhenBackgroundIsClicked = CancelOnPageOverlayTouch;
+                else if (propertyName == TargetProperty.PropertyName)
                     Update();
-                    return IsVisible;// && !_disposed;
-                });
-            }
-            */
+
+
+                if (_decorativeContainerView != null && !_disposed)
+                {
+                    #region ILayout
+                    if (propertyName == PaddingProperty.PropertyName)
+                        _decorativeContainerView.Padding = Padding;
+                    #endregion
+
+                    #region IBackground
+                    else if (propertyName == BackgroundImageProperty.PropertyName)
+                        _decorativeContainerView.BackgroundImage = BackgroundImage;
+
+                    #region IShape
+                    else if (propertyName == BackgroundColorProperty.PropertyName)
+                        _decorativeContainerView.BackgroundColor = (BackgroundColor == Color.Default || BackgroundColor == default ? Color.White : BackgroundColor);
+                    else if (propertyName == HasShadowProperty.PropertyName)
+                        _decorativeContainerView.HasShadow = HasShadow;
+                    else if (propertyName == ShadowInvertedProperty.PropertyName)
+                        _decorativeContainerView.ShadowInverted = ShadowInverted;
+                    else if (propertyName == OutlineColorProperty.PropertyName)
+                        _decorativeContainerView.OutlineColor = OutlineColor;
+                    else if (propertyName == OutlineWidthProperty.PropertyName)
+                        _decorativeContainerView.OutlineWidth = OutlineWidth;
+                    else if (propertyName == OutlineRadiusProperty.PropertyName)
+                        _decorativeContainerView.OutlineRadius = OutlineRadius;
+                    else if (propertyName == ElementShapeProperty.PropertyName)
+                        _decorativeContainerView.ElementShape = ElementShape;
+                    #endregion IShape
+
+                    #endregion IBackground
+                }
+            });
         }
 
-        const int refreshPeriod = 50;
 
 
         Rectangle _lastTargetBounds = new Rectangle();
@@ -986,21 +1097,20 @@ namespace Forms9Patch
         {
             if (IsVisible && Target != null)
             {
+                Recursion.Enter(GetType().ToString(), _id.ToString());
                 var targetBounds = Target is PopupBase popup
                     ? DependencyService.Get<IDescendentBounds>().PageDescendentBounds(this, popup.DecorativeContainerView)
                     : DependencyService.Get<IDescendentBounds>().PageDescendentBounds(this, Target);
 
-                if (targetBounds.Width < 0 && targetBounds.Height < 0 && targetBounds.X < 0 && targetBounds.Y < 0)
-                    return;
-
-                //System.Diagnostics.Debug.WriteLine("Target.Bounds=[" + targetBounds + "]");
-
-                if (_lastTargetBounds != targetBounds) //&& DateTime.Now - _lastLayout > TimeSpan.FromMilliseconds(refreshPeriod))
+                if (!(targetBounds.Width < 0 && targetBounds.Height < 0 && targetBounds.X < 0 && targetBounds.Y < 0))
                 {
-                    _lastTargetBounds = targetBounds;
-                    //System.Diagnostics.Debug.WriteLine("B");
-                    HardForceLayout();
+                    if (_lastTargetBounds != targetBounds) //&& DateTime.Now - _lastLayout > TimeSpan.FromMilliseconds(refreshPeriod))
+                    {
+                        _lastTargetBounds = targetBounds;
+                        HardForceLayout();
+                    }
                 }
+                Recursion.Exit(GetType().ToString(), _id.ToString());
             }
         }
 

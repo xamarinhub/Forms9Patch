@@ -20,6 +20,7 @@ namespace Forms9Patch.iOS
 
         static LabelRenderer()
         {
+            //if (UIDevice.CurrentDevice.CheckSystemVersion(11, 4))
             Forms9Patch.Label.DefaultFontSize = UIFont.LabelFontSize;
         }
 
@@ -52,6 +53,7 @@ namespace Forms9Patch.iOS
                 if (_currentDrawState == _lastDrawState && _lastDrawResult.HasValue)
                     return _lastDrawResult.Value;
                 _lastDrawResult = InternalLayout(control, _currentDrawState);
+                //_lastDrawState?.Dispose();
                 _lastDrawState = new TextControlState(_currentDrawState);
                 return _lastDrawResult.Value;
             }
@@ -74,6 +76,7 @@ namespace Forms9Patch.iOS
                 || Element == null)
                 return new SizeRequest(Size.Zero);
 
+            //_currentMeasureState?.Dispose();
             _currentMeasureState = new TextControlState(_currentDrawState)
             {
                 AvailWidth = widthConstraint,
@@ -84,6 +87,7 @@ namespace Forms9Patch.iOS
                 return _lastMeasureResult.Value;
 
             _lastMeasureResult = InternalLayout(MeasureControl, _currentMeasureState);
+            //_lastMeasureState?.Dispose();
             _lastMeasureState = new TextControlState(_currentMeasureState);
 
             return _lastMeasureResult.Value;
@@ -94,6 +98,10 @@ namespace Forms9Patch.iOS
             if (Element is Forms9Patch.Label element)
             {
                 var tmpFontSize = BoundTextSize(element.FontSize);
+
+                if (tmpFontSize < 0)
+                    System.Diagnostics.Debug.WriteLine(GetType() + "." + P42.Utils.ReflectionExtensions.CallerMemberName() + ": [" + null + "]");
+
                 control.PropertiesFromControlState(state);
                 control.Lines = 0;
 
@@ -119,6 +127,10 @@ namespace Forms9Patch.iOS
                 }
 
                 tmpFontSize = BoundFontSize(tmpFontSize);
+
+                if (tmpFontSize < 0)
+                    System.Diagnostics.Debug.WriteLine(GetType() + "." + P42.Utils.ReflectionExtensions.CallerMemberName() + ": [" + null + "]");
+
 
                 if (Math.Abs(tmpFontSize - element.FittedFontSize) > 0.1)
                 {
@@ -182,7 +194,12 @@ namespace Forms9Patch.iOS
                     else if (element.VerticalTextAlignment == TextAlignment.End)
                         control.Center = new CGPoint(control.Center.X, state.AvailHeight - reqHeight / 2);
                 }
-                var result = new SizeRequest(new Size(Math.Ceiling(reqWidth), Math.Ceiling(reqHeight)), new Size(10, Math.Ceiling(state.Font.LineHeight)));
+                SizeRequest result;
+                //if (UIDevice.CurrentDevice.CheckSystemVersion(11, 3))
+                result = new SizeRequest(new Size(Math.Ceiling(reqWidth), Math.Ceiling(reqHeight)), new Size(10, Math.Ceiling(state.Font.LineHeight)));
+                //else
+                //    result = new SizeRequest(new Size(Math.Ceiling(reqWidth * 1.25), Math.Ceiling(reqHeight * 1.25)), new Size(10, Math.Ceiling(state.Font.LineHeight)));
+
                 return result;
             }
             return new SizeRequest(Size.Zero);
@@ -228,11 +245,12 @@ namespace Forms9Patch.iOS
         {
             var font = label.Font.WithSize(fontSize);
             CGSize labelSize = CGSize.Empty;
-            var constraintSize = new CGSize(widthConstraint, double.PositiveInfinity);
-            if (Element is Forms9Patch.Label element)
+            var constraintSize = new CGSize(Math.Floor(widthConstraint), double.PositiveInfinity);
+            if (Element is Label element)
             {
                 if (element.Text != null)
                 {
+                    label.Text = element.Text;
                     labelSize = label.Text.StringSize(font, constraintSize,// _currentDrawState.LineBreakMode);
                     element.LineBreakMode == LineBreakMode.CharacterWrap
                         ? UILineBreakMode.CharacterWrap
@@ -241,7 +259,7 @@ namespace Forms9Patch.iOS
                 else if (element?.HtmlText != null)
                 {
                     var color = element.TextColor;
-                    label.AttributedText = element.F9PFormattedString.ToNSAttributedString(font, color.ToUIColor(Color.Black));
+                    label.AttributedText = element.F9PFormattedString.ToNSAttributedString(font, color.ToUIColor(Color.Black), element.LineHeight);
                     labelSize = label.AttributedText.GetBoundingRect(constraintSize, NSStringDrawingOptions.UsesLineFragmentOrigin, null).Size;
                 }
             }
@@ -353,10 +371,7 @@ namespace Forms9Patch.iOS
                 UpdateFont();
                 UpdateHorizontalAlignment();
                 UpdateLineBreakMode();
-                if (e.NewElement.HtmlText != null)
-                    UpdateAttributedText();
-                else
-                    UpdateText();
+                UpdateStrings();
                 e.NewElement.RendererIndexAtPoint += IndexAtPoint;
                 e.NewElement.RendererSizeForWidthAndFontSize += LabelF9PSize;
                 e.NewElement.Draw += DrawLabel;
@@ -370,6 +385,20 @@ namespace Forms9Patch.iOS
             if (!_disposed && disposing)
             {
                 _disposed = true;
+
+                if (Element is Label label)
+                {
+                    try
+                    {
+                        label.RendererIndexAtPoint -= IndexAtPoint;
+                        label.RendererSizeForWidthAndFontSize -= LabelF9PSize;
+                        label.Draw -= DrawLabel;
+                    }
+#pragma warning disable RECS0022 // A catch clause that catches System.Exception and has an empty body
+                    catch (System.Exception) { }
+#pragma warning restore RECS0022 // A catch clause that catches System.Exception and has an empty body
+                }
+
                 _measureControl?.Dispose();
                 _measureControl = null;
             }
@@ -399,14 +428,12 @@ namespace Forms9Patch.iOS
                 UpdateFont();
                 LayoutSubviews();
             }
-            else if (e.PropertyName == Label.TextProperty.PropertyName)
+            else if (e.PropertyName == Label.TextProperty.PropertyName
+                || e.PropertyName == Label.HtmlTextProperty.PropertyName
+                || e.PropertyName == Label.LineHeightProperty.PropertyName
+                )
             {
-                UpdateText();
-                LayoutSubviews();
-            }
-            else if (e.PropertyName == Label.HtmlTextProperty.PropertyName)
-            {
-                UpdateAttributedText();
+                UpdateStrings();
                 LayoutSubviews();
             }
             else if (e.PropertyName == Label.VerticalTextAlignmentProperty.PropertyName)
@@ -454,10 +481,7 @@ namespace Forms9Patch.iOS
                 var font = label.ToUIFont();
                 _currentDrawState.FontPointSize = font.PointSize;
                 _currentDrawState.FontDescriptor = font.FontDescriptor;
-                if (label.HtmlText != null)
-                    UpdateAttributedText();
-                else
-                    UpdateText();
+                UpdateStrings();
             }
         }
 
@@ -488,16 +512,43 @@ namespace Forms9Patch.iOS
             }
         }
 
+        void UpdateStrings()
+        {
+            if (Element is Forms9Patch.Label element && element.HtmlText != null)
+                UpdateAttributedText();
+            else
+                UpdateText();
+        }
+
         void UpdateText()
         {
             if (Element is Forms9Patch.Label element)
             {
+                _currentDrawState.AttributedString?.Dispose();
                 _currentDrawState.AttributedString = null;
+
+                _currentDrawState.Text?.Dispose();
+                _currentDrawState.Text = null;
+
                 _currentDrawState.Text = element?.Text is null
                     ? null
                     : new NSString(element.Text);
+
                 if (Control is UILabel control)
-                    control.Text = _currentDrawState.Text;
+                {
+                    control.AttributedText?.Dispose();
+                    control.AttributedText = null;
+                    control.Text = null;
+
+                    if (string.IsNullOrEmpty(_currentDrawState.Text) || element.LineHeight <= 0 || Math.Abs(element.LineHeight - 1) < 0.01)
+                        control.Text = _currentDrawState.Text;
+                    else
+                    {
+                        var attributedString = new NSMutableAttributedString(_currentDrawState.Text);
+                        attributedString.AddAttribute(UIStringAttributeKey.ParagraphStyle, new NSMutableParagraphStyle { LineHeightMultiple = new nfloat(element.LineHeight) }, new NSRange(0, _currentDrawState.Text.Length));
+                        control.AttributedText = attributedString;
+                    }
+                }
             }
         }
 
@@ -509,7 +560,7 @@ namespace Forms9Patch.iOS
                 _currentDrawState.Text = null;
                 _currentDrawState.AttributedString = element?.HtmlText is null
                     ? null
-                    : element.F9PFormattedString.ToNSAttributedString(_currentDrawState.Font, color.ToUIColor(Color.Black));
+                    : element.F9PFormattedString.ToNSAttributedString(_currentDrawState.Font, color.ToUIColor(Color.Black), element.LineHeight);
                 if (Control is UILabel control)
                     control.AttributedText = _currentDrawState.AttributedString;
             }
@@ -526,10 +577,7 @@ namespace Forms9Patch.iOS
                         control.TextColor = _defaultTextColor;
                     else
                         control.TextColor = color.ToUIColor();
-                    if (label.HtmlText != null)
-                        UpdateAttributedText();
-                    else
-                        UpdateText();
+                    UpdateStrings();
                 }
             });
         }
@@ -577,8 +625,10 @@ namespace Forms9Patch.iOS
 #pragma warning disable CS0618 // Type or member is obsolete
                     textSize = (System.nfloat)(UIFont.LabelFontSize * System.Math.Abs(element.FontSize));
 #pragma warning restore CS0618 // Type or member is obsolete
-                if (textSize > element.FontSize)
+                if (element.FontSize > 0 && textSize > element.FontSize)
                     return (nfloat)element.FontSize;
+                if (Math.Abs(element.FontSize - -1) < 0.0001 && textSize > Label.DefaultFontSize)
+                    return (System.nfloat)Label.DefaultFontSize;
                 if (textSize < ModelMinFontSize)
                     textSize = ModelMinFontSize;
             }
@@ -607,27 +657,25 @@ namespace Forms9Patch.iOS
                 var cgPoint = new CGPoint(point.X, point.Y - control.Frame.Y);
 
                 // init text storage
-                var textStorage = new NSTextStorage();
-                var attrText = new NSAttributedString(control.AttributedText);
-                textStorage.SetString(attrText);
-
-                // init layout manager
-                var layoutManager = new NSLayoutManager();
-                textStorage.AddLayoutManager(layoutManager);
-
-                // init text container
-                var textContainer = new NSTextContainer(new CGSize(control.Frame.Width, control.Frame.Height * 2))
+                using (var textStorage = new NSTextStorage())
+                using (var attrText = new NSAttributedString(control.AttributedText))
+                using (var layoutManager = new NSLayoutManager())
+                using (var textContainer = new NSTextContainer(new CGSize(control.Frame.Width, control.Frame.Height * 2))
                 {
                     LineFragmentPadding = 0,
                     MaximumNumberOfLines = (nuint)_currentDrawState.Lines,
                     LineBreakMode = UILineBreakMode.WordWrap,
-                    Size = new CGSize(control.Frame.Width, control.Frame.Height * 2)
-                };
-                layoutManager.AddTextContainer(textContainer);
-                layoutManager.AllowsNonContiguousLayout = true;
+                    //Size = new CGSize(control.Frame.Width, control.Frame.Height * 2)
+                })
+                {
+                    textStorage.SetString(attrText);
+                    textStorage.AddLayoutManager(layoutManager);
+                    layoutManager.AddTextContainer(textContainer);
+                    layoutManager.AllowsNonContiguousLayout = true;
 
-                var characterIndex = layoutManager.GetCharacterIndex(cgPoint, textContainer);
-                return (int)characterIndex;
+                    var characterIndex = layoutManager.GetCharacterIndex(cgPoint, textContainer);
+                    return (int)characterIndex;
+                }
             }
             return -1;
         }

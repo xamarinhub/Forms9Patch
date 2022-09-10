@@ -5,70 +5,90 @@ using UIKit;
 [assembly: Xamarin.Forms.Dependency(typeof(Forms9Patch.iOS.HapticService))]
 namespace Forms9Patch.iOS
 {
+    [Xamarin.Forms.Internals.Preserve(AllMembers = true)]
     public class HapticService : IHapticsService
     {
-        public void Feedback(HapticEffect effect, EffectMode mode = EffectMode.Default)
+        static readonly AudioToolbox.SystemSound vibrate = new AudioToolbox.SystemSound(4095);
+
+        public void Feedback(HapticEffect effect, FeedbackMode mode = FeedbackMode.Default)
         {
-            if (mode == EffectMode.Off
+            if (mode == FeedbackMode.Off
                 || effect == HapticEffect.None
+                || (mode == FeedbackMode.Default && Forms9Patch.Feedback.HapticMode == FeedbackMode.Off)
                 || !UIDevice.CurrentDevice.CheckSystemVersion(10, 0))
-                return;
-            if (mode == EffectMode.Default && Forms9Patch.Settings.HapticEffectMode == EffectMode.Off)
                 return;
             switch (effect)
             {
                 case HapticEffect.Selection:
                     {
-                        var selection = new UISelectionFeedbackGenerator();
-                        selection.Prepare();
-                        selection.SelectionChanged();
+                        using (var selection = new UISelectionFeedbackGenerator())
+                        {
+                            selection.Prepare();
+                            selection.SelectionChanged();
+                        }
                     }
                     break;
                 case HapticEffect.LightImpact:
                     {
-                        var impact = new UIImpactFeedbackGenerator(UIImpactFeedbackStyle.Light);
-                        impact.Prepare();
-                        impact.ImpactOccurred();
+                        using (var impact = new UIImpactFeedbackGenerator(UIImpactFeedbackStyle.Light))
+                        {
+                            impact.Prepare();
+                            impact.ImpactOccurred();
+                        }
                     }
                     break;
                 case HapticEffect.MediumImpact:
                     {
-                        var impact = new UIImpactFeedbackGenerator(UIImpactFeedbackStyle.Medium);
-                        impact.Prepare();
-                        impact.ImpactOccurred();
+                        using (var impact = new UIImpactFeedbackGenerator(UIImpactFeedbackStyle.Medium))
+                        {
+                            impact.Prepare();
+                            impact.ImpactOccurred();
+                        }
                     }
                     break;
                 case HapticEffect.HeavyImpact:
                     {
-                        var impact = new UIImpactFeedbackGenerator(UIImpactFeedbackStyle.Heavy);
-                        impact.Prepare();
-                        impact.ImpactOccurred();
+                        using (var impact = new UIImpactFeedbackGenerator(UIImpactFeedbackStyle.Heavy))
+                        {
+                            impact.Prepare();
+                            impact.ImpactOccurred();
+                        }
                     }
                     break;
                 case HapticEffect.ErrorNotification:
                     {
                         // Initialize feedback
-                        var notification = new UINotificationFeedbackGenerator();
-                        notification.Prepare();
-                        notification.NotificationOccurred(UINotificationFeedbackType.Error);
+                        using (var notification = new UINotificationFeedbackGenerator())
+                        {
+                            notification.Prepare();
+                            notification.NotificationOccurred(UINotificationFeedbackType.Error);
+                        }
                     }
                     break;
                 case HapticEffect.WarningNotification:
                     {
                         // Initialize feedback
-                        var notification = new UINotificationFeedbackGenerator();
-                        notification.Prepare();
-                        notification.NotificationOccurred(UINotificationFeedbackType.Warning);
+                        using (var notification = new UINotificationFeedbackGenerator())
+                        {
+                            notification.Prepare();
+                            notification.NotificationOccurred(UINotificationFeedbackType.Warning);
+                        }
                     }
                     break;
                 case HapticEffect.SuccessNotification:
                     {
                         // Initialize feedback
-                        var notification = new UINotificationFeedbackGenerator();
-                        notification.Prepare();
-                        notification.NotificationOccurred(UINotificationFeedbackType.Success);
+                        using (var notification = new UINotificationFeedbackGenerator())
+                        {
+                            notification.Prepare();
+                            notification.NotificationOccurred(UINotificationFeedbackType.Success);
+                        }
                     }
                     break;
+                case HapticEffect.Long:
+                    vibrate.PlaySystemSound();
+                    break;
+
             }
 
         }

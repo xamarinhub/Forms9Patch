@@ -4,24 +4,27 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>Forms9Patch</AssemblyName>
     <RootNamespace>Forms9Patch</RootNamespace>
+    <PackageIcon>Resources\icon.png</PackageIcon>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DefineConstants>TRACE;DEBUG;</DefineConstants>
-    <LangVersion>7.1</LangVersion>
+    <DefineConstants>TRACE;DEBUG;NETSTANDARD;NETSTANDARD2_0</DefineConstants>
+    <LangVersion>7.3</LangVersion>
+    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <!--DebugType>full</DebugType-->
     <DefineConstants>TRACE;RELEASE;</DefineConstants>
     <DocumentationFile>bin\Release\netstandard1.3\Forms9Patch.xml</DocumentationFile>
     <!--DebugType>full</DebugType-->
-    <LangVersion>7.1</LangVersion>
+    <LangVersion>7.3</LangVersion>
+    <!--DebugType>full</DebugType-->
     <!--DebugType>full</DebugType-->
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Xamarin.Forms" Version="4.0.0.497661" />
-    <PackageReference Include="SkiaSharp.Views.Forms" Version="1.68.0" />
+    <PackageReference Include="Xamarin.Essentials" Version="1.7.1" />
+    <PackageReference Include="Xamarin.Forms" Version="5.0.0.2337" />
+    <PackageReference Include="SkiaSharp.Views.Forms" Version="2.80.3" />
     <PackageReference Include="SkiaSharp.Svg" Version="1.60.0" />
-    <PackageReference Include="Rg.Plugins.Popup" Version="1.1.5.188" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\MimeSharp\MimeSharp\MimeSharp.csproj" />
@@ -35,6 +38,21 @@
     <None Remove="Resources\ic_navigate_next_white_24px.svg" />
     <None Remove="Resources\menu_up.svg" />
     <None Remove="Resources\menu_down.svg" />
+    <None Remove="Resources\Sounds\alarm.mp3" />
+    <None Remove="Resources\Sounds\message.ogg" />
+    <None Remove="Resources\Sounds\message.m4r" />
+    <None Remove="Resources\Sounds\message.mp3" />
+    <None Remove="Resources\Sounds\notification.ogg" />
+    <None Remove="Resources\Sounds\notification.m4r" />
+    <None Remove="Resources\Sounds\notification.mp3" />
+    <None Remove="Resources\Sounds\alarm.m4r" />
+    <None Remove="Resources\Sounds\alarm.ogg" />
+    <None Remove="Resources\Sounds\alert.m4r" />
+    <None Remove="Resources\Sounds\alert.mp3" />
+    <None Remove="Resources\Sounds\alert.ogg" />
+    <None Remove="Resources\Sounds\error.m4r" />
+    <None Remove="Resources\Sounds\error.mp3" />
+    <None Remove="Resources\Sounds\error.ogg" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\Fonts\STIXGeneral.otf" />
@@ -42,6 +60,33 @@
     <EmbeddedResource Include="Resources\menu_right.svg" />
     <EmbeddedResource Include="Resources\menu_up.svg" />
     <EmbeddedResource Include="Resources\menu_down.svg" />
+    <EmbeddedResource Include="Resources\Sounds\alarm.mp3" />
+    <EmbeddedResource Include="Resources\Sounds\message.ogg" />
+    <EmbeddedResource Include="Resources\Sounds\message.m4r" />
+    <EmbeddedResource Include="Resources\Sounds\message.mp3" />
+    <EmbeddedResource Include="Resources\Sounds\notification.ogg" />
+    <EmbeddedResource Include="Resources\Sounds\notification.m4r" />
+    <EmbeddedResource Include="Resources\Sounds\notification.mp3" />
+    <EmbeddedResource Include="Resources\Sounds\alarm.m4r" />
+    <EmbeddedResource Include="Resources\Sounds\alarm.ogg" />
+    <EmbeddedResource Include="Resources\Sounds\alert.m4r" />
+    <EmbeddedResource Include="Resources\Sounds\alert.mp3" />
+    <EmbeddedResource Include="Resources\Sounds\alert.ogg" />
+    <!--
+    <EmbeddedResource Include="**/*" />
+    <EmbeddedResource Include="**/*" />
+    <EmbeddedResource Include="**/*" />
+    -->
+    <EmbeddedResource Include="Resources\Sounds\error.m4r" />
+    <EmbeddedResource Include="Resources\Sounds\error.mp3" />
+    <EmbeddedResource Include="Resources\Sounds\error.ogg" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Elements\Popups\Core\" />
+    <Folder Include="Elements\Popups\Core\Converters\" />
+    <Folder Include="Elements\Popups\Core\Animations\" />
+    <Folder Include="Resources\Sounds\" />
+    <Folder Include="Elements\Pages\" />
   </ItemGroup>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition=" '$(Configuration)'=='Release' And '$(OS)'=='Windows_NT' And '$(SolutionName)'=='Forms9Patch' ">
     <Message Text="SolutionDir = $(SolutionDir)" Importance="High" />  
@@ -49,6 +94,6 @@
     <MakeDir Directories="$(SolutionDir)Forms9Patch\Forms9Patch.NuGet\lib\netstandard2.0" Condition="!Exists('$(SolutionDir)Forms9Patch\Forms9Patch.NuGet\lib\netstandard2.0')" />
     <Exec Command="xcopy $(TargetDir)*.*  $(SolutionDir)Forms9Patch\Forms9Patch.NuGet\lib\netstandard2.0\ /Y" />
     <Exec Command="del $(SolutionDir)Forms9Patch\Forms9Patch.NuGet\lib\netstandard2.0\Forms9Patch.deps.json" />
-    <Exec Command="xcopy $(SolutionDir)LICENSE  $(SolutionDir)Forms9Patch\Forms9Patch.NuGet\license\LICENSE /Y" />
+    <Exec Command="xcopy $(SolutionDir)LICENSE  $(SolutionDir)Forms9Patch\Forms9Patch.NuGet\license\ /Y" />
   </Target>
 </Project>

@@ -3,37 +3,40 @@ using System;
 using System.Drawing;
 using UIKit;
 using Xamarin.Forms;
+using Xamarin.Forms.Platform.iOS;
 
 namespace FormsGestures.iOS
 {
 	public static class iOSEventArgsHelper
 	{
-		public static Xamarin.Forms.Rectangle GetViewPosition(RectangleF frame) {
-			return new Xamarin.Forms.Rectangle((double)frame.X, (double)frame.Y, (double)frame.Width, (double)frame.Height);
-		}
-
-		public static Xamarin.Forms.Rectangle GetViewPosition(CGRect frame) {
-			return new Xamarin.Forms.Rectangle(frame.X, frame.Y, frame.Width, frame.Height);
-		}
-
-		public static Xamarin.Forms.Point[] GetTouches(UIGestureRecognizer gestureRecognizer, CGPoint locationAtStart) {
+		public static Xamarin.Forms.Point[] GetTouches(this UIGestureRecognizer gestureRecognizer, UIView view) {
 			nint numberOfTouches = gestureRecognizer.NumberOfTouches;
 			var array = new Xamarin.Forms.Point[numberOfTouches];
-			for (int i = 0; i < numberOfTouches; i++) {
-				//var viewPoint = gestureRecognizer.LocationOfTouch(i, gestureRecognizer.View);
-				//var windowPoint = gestureRecognizer.View.ConvertPointToView (viewPoint, null);
-				var windowPoint = gestureRecognizer.LocationOfTouch(i, null);
-
-				array[i] = new Xamarin.Forms.Point(windowPoint.X-locationAtStart.X, windowPoint.Y-locationAtStart.Y);
+			for (int i = 0; i < numberOfTouches; i++)
+            {
+                /*
+                if (view == null)
+                {
+					var page = Xamarin.Forms.Application.Current.MainPage;
+					if (page is Xamarin.Forms.NavigationPage navPage)
+						page = navPage.CurrentPage;
+					if (Xamarin.Forms.Platform.iOS.Platform.GetRenderer(page) is Xamarin.Forms.Platform.iOS.IVisualElementRenderer renderer)
+						view = renderer.NativeView;
+                }
+                */
+				var point = gestureRecognizer.LocationOfTouch(i, view);
+				array[i] = point.ToPoint();
 			}
 			return array;
 		}
 
-		public static Xamarin.Forms.Point[] GetTouches(UIGestureRecognizer gestureRecognizer, int requiredTouches, BaseGestureEventArgs previous, CGPoint locationAtStart) {
+		public static Xamarin.Forms.Point[] GetTouches(this UIGestureRecognizer gestureRecognizer, UIView view, int requiredTouches, BaseGestureEventArgs previous) {
 			nint numberOfTouches = gestureRecognizer.NumberOfTouches;
 			if (numberOfTouches < requiredTouches && previous != null)
-				return previous.Touches;
-			return iOSEventArgsHelper.GetTouches(gestureRecognizer, locationAtStart);
+				return view==null
+                    ? previous.WindowTouches
+                    : previous.ElementTouches;
+			return iOSEventArgsHelper.GetTouches(gestureRecognizer, view);
 		}
 	}
 }

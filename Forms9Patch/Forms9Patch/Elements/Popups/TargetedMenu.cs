@@ -1,16 +1,18 @@
-using System;
+﻿using System;
+using System.ComponentModel;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 using Xamarin.Forms;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace Forms9Patch
 {
     /// <summary>
     /// Forms9Patch.TargetedMenu class 
     /// </summary>
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     [ContentProperty(nameof(Segments))]
     public class TargetedMenu : BubblePopup
     {
@@ -23,11 +25,28 @@ namespace Forms9Patch
         static readonly Color DefaultVerticalSeparatorColor = DefaultVerticalTextColor;
 
 
-        static readonly double DefaultSeparatorThickness = 1 / Forms9Patch.Display.Scale;
+        static readonly double DefaultSeparatorThickness = 1 / Display.Scale;
 
 
 
         #region Properties
+
+        #region SelectedSegment property
+        static readonly BindablePropertyKey SelectedSegmentPropertyKey = BindableProperty.CreateReadOnly(nameof(SelectedSegment), typeof(Segment), typeof(TargetedMenu), default(Segment));
+        /// <summary>
+        /// SelectedSegment BindableProperty
+        /// </summary>
+        public static BindableProperty SelectedSegmentProperty => SelectedSegmentPropertyKey.BindableProperty;
+
+        /// <summary>
+        /// Returns the currently selected segment
+        /// </summary>
+        public Segment SelectedSegment
+        {
+            get => (Segment)GetValue(SelectedSegmentProperty);
+            private set => SetValue(SelectedSegmentPropertyKey, value);
+        }
+        #endregion
 
         #region Segments property
         readonly ObservableCollection<Segment> _segments = new ObservableCollection<Segment>();
@@ -69,7 +88,7 @@ namespace Forms9Patch
         /// <summary>
         /// backing store for FontSize property
         /// </summary>
-        public static readonly BindableProperty FontSizeProperty = BindableProperty.Create(nameof(FontSize), typeof(double), typeof(TargetedMenu), -1.0);
+        public static readonly BindableProperty FontSizeProperty = BindableProperty.Create(nameof(FontSize), typeof(double), typeof(TargetedMenu), 14.0);
         /// <summary>
         /// Gets/Sets the FontSize property
         /// </summary>
@@ -84,13 +103,13 @@ namespace Forms9Patch
         /// <summary>
         /// backing store for FontColor property
         /// </summary>
-        public static readonly BindableProperty TextColorProperty = BindableProperty.Create(nameof(TextColor), typeof(Xamarin.Forms.Color), typeof(TargetedMenu), default(Color));
+        public static readonly BindableProperty TextColorProperty = BindableProperty.Create(nameof(TextColor), typeof(Color), typeof(TargetedMenu), default(Color));
         /// <summary>
         /// Gets/Sets the FontColor property
         /// </summary>
-        public Xamarin.Forms.Color TextColor
+        public Color TextColor
         {
-            get => (Xamarin.Forms.Color)GetValue(TextColorProperty);
+            get => (Color)GetValue(TextColorProperty);
             set => SetValue(TextColorProperty, value);
         }
         #endregion TextColor property
@@ -144,13 +163,13 @@ namespace Forms9Patch
         /// <summary>
         /// backing store for HapticEffectMode property
         /// </summary>
-        public static readonly BindableProperty HapticEffectModeProperty = BindableProperty.Create(nameof(HapticEffectMode), typeof(EffectMode), typeof(TargetedMenu), default(EffectMode));
+        public static readonly BindableProperty HapticEffectModeProperty = BindableProperty.Create(nameof(HapticEffectMode), typeof(FeedbackMode), typeof(TargetedMenu), default(FeedbackMode));
         /// <summary>
         /// Gets/Sets the HapticEffectMode property
         /// </summary>
-        public EffectMode HapticEffectMode
+        public FeedbackMode HapticEffectMode
         {
-            get => (EffectMode)GetValue(HapticEffectModeProperty);
+            get => (FeedbackMode)GetValue(HapticEffectModeProperty);
             set => SetValue(HapticEffectModeProperty, value);
         }
         #endregion HapticEffectMode property
@@ -175,18 +194,17 @@ namespace Forms9Patch
         /// <summary>
         /// The backing store for the sound effect mode property.
         /// </summary>
-        public static readonly BindableProperty SoundEffectModeProperty = BindableProperty.Create(nameof(SoundEffectMode), typeof(EffectMode), typeof(TargetedMenu), default(EffectMode));
+        public static readonly BindableProperty SoundEffectModeProperty = BindableProperty.Create(nameof(SoundEffectMode), typeof(FeedbackMode), typeof(TargetedMenu), default(FeedbackMode));
         /// <summary>
         /// Gets or sets if the sound effect is played when a menu item is tapped
         /// </summary>
         /// <value>The sound effect mode.</value>
-        public EffectMode SoundEffectMode
+        public FeedbackMode SoundEffectMode
         {
-            get => (EffectMode)GetValue(SoundEffectModeProperty);
+            get => (FeedbackMode)GetValue(SoundEffectModeProperty);
             set => SetValue(SoundEffectModeProperty, value);
         }
         #endregion SoundEffectMode property
-
 
         #region IcontFontFamiliy property
         /// <summary>
@@ -202,6 +220,22 @@ namespace Forms9Patch
             set => SetValue(IconFontFamilyProperty, value);
         }
         #endregion IcontFontFamiliy property
+
+        #region IconFontSize
+        /// <summary>
+        /// Backing store for TargetedMenu IconFontSize property
+        /// </summary>
+        public static readonly BindableProperty IconFontSizeProperty = BindableProperty.Create(nameof(IconFontSize), typeof(double), typeof(TargetedMenu), -1.0);
+        /// <summary>
+        /// controls value of .IconFontSize property
+        /// </summary>
+        public double IconFontSize
+        {
+            get => (double)GetValue(IconFontSizeProperty);
+            set => SetValue(IconFontSizeProperty, value);
+        }
+        #endregion
+
 
         #region FontFamily property
         /// <summary>
@@ -222,23 +256,22 @@ namespace Forms9Patch
 
 
         #region VisualElements
-#pragma warning disable CC0033 // Dispose Fields Properly
         readonly Button _leftArrowButton = new Button
         {
             IsVisible = false,
             TextColor = DefaultHorizontalTextColor,
             FontSize = 24,
             TintIcon = true,
-            IconImage = new Forms9Patch.Image("Forms9Patch.Resources.menu_left.svg") { Fill = Fill.AspectFill, WidthRequest = 24, HeightRequest = 24 },
+            IconImage = new Image("Forms9Patch.Resources.menu_left.svg") { Fill = Fill.AspectFill, WidthRequest = 24, HeightRequest = 24 },
             HasTightSpacing = true,
-            Padding = Device.RuntimePlatform == Device.UWP ? new Thickness(4, 0, 4, 4) : new Thickness(0, 0),
+            Padding = new Thickness(0, 0), //Device.RuntimePlatform == Device.UWP ? new Thickness(4, 0, 4, 4) : new Thickness(0, 0),
             VerticalTextAlignment = TextAlignment.Center,
             HorizontalTextAlignment = TextAlignment.Center,
             VerticalOptions = LayoutOptions.Fill,
             HorizontalOptions = LayoutOptions.Fill,
             BackgroundColor = DefaultHorizontalBackgroundColor.WithAlpha(0.05),
             Lines = 1,
-            AutoFit = AutoFit.None,
+            AutoFit = AutoFit.None
         };
         readonly BoxView _leftArrowSeparator = new BoxView { Color = DefaultHorizontalSeparatorColor, WidthRequest = DefaultSeparatorThickness, Margin = 0 };
 
@@ -248,16 +281,16 @@ namespace Forms9Patch
             TextColor = DefaultHorizontalTextColor,
             FontSize = 24,
             TintIcon = true,
-            IconImage = new Forms9Patch.Image("Forms9Patch.Resources.menu_right.svg") { Fill = Fill.AspectFill, WidthRequest = 24, HeightRequest = 24 },
+            IconImage = new Image("Forms9Patch.Resources.menu_right.svg") { Fill = Fill.AspectFill, WidthRequest = 24, HeightRequest = 24 },
             HasTightSpacing = true,
-            Padding = Device.RuntimePlatform == Device.UWP ? new Thickness(4, 0, 4, 4) : new Thickness(0, 0),
+            Padding = new Thickness(0, 0), // Device.RuntimePlatform == Device.UWP ? new Thickness(4, 0, 4, 4) : new Thickness(0, 0),
             VerticalTextAlignment = TextAlignment.Center,
             HorizontalTextAlignment = TextAlignment.Center,
             VerticalOptions = LayoutOptions.Fill,
             HorizontalOptions = LayoutOptions.Fill,
             BackgroundColor = DefaultHorizontalBackgroundColor.WithAlpha(0.05),
             Lines = 1,
-            AutoFit = AutoFit.None,
+            AutoFit = AutoFit.None
         };
         // this is crazy but the stack layout doesn't give the children the correct space if it isn't included.
         readonly BoxView _rightArrowSeparator = new BoxView { Color = DefaultHorizontalSeparatorColor, WidthRequest = 0.05, Margin = 0 };
@@ -269,17 +302,16 @@ namespace Forms9Patch
             TextColor = DefaultVerticalTextColor,
             FontSize = 24,
             TintIcon = true,
-            IconImage = new Forms9Patch.Image("Forms9Patch.Resources.menu_up.svg") { Fill = Fill.AspectFill, WidthRequest = 24, HeightRequest = 24 },
+            IconImage = new Image("Forms9Patch.Resources.menu_up.svg") { Fill = Fill.AspectFill, WidthRequest = 24, HeightRequest = 24 },
             HasTightSpacing = true,
-            //Padding = Device.RuntimePlatform == Device.UWP ? new Thickness(4, 0, 4, 4) : new Thickness(10, 0),
             Padding = new Thickness(0, 10),
             VerticalTextAlignment = TextAlignment.Center,
             HorizontalTextAlignment = TextAlignment.Center,
             VerticalOptions = LayoutOptions.Fill,
-            HorizontalOptions = LayoutOptions.Fill,
+            HorizontalOptions = LayoutOptions.Center,
             BackgroundColor = DefaultVerticalBackgroundColor.WithAlpha(0.05),
             Lines = 1,
-            AutoFit = AutoFit.None,
+            AutoFit = AutoFit.None
         };
         readonly BoxView _upArrowSeparator = new BoxView { Color = DefaultVerticalSeparatorColor, HeightRequest = DefaultSeparatorThickness, Margin = 0 };
 
@@ -289,20 +321,18 @@ namespace Forms9Patch
             TextColor = DefaultVerticalTextColor,
             FontSize = 24,
             TintIcon = true,
-            IconImage = new Forms9Patch.Image("Forms9Patch.Resources.menu_down.svg") { Fill = Fill.AspectFill, WidthRequest = 24, HeightRequest = 24 },
+            IconImage = new Image("Forms9Patch.Resources.menu_down.svg") { Fill = Fill.AspectFill, WidthRequest = 24, HeightRequest = 24 },
             HasTightSpacing = true,
-            //Padding = Device.RuntimePlatform == Device.UWP ? new Thickness(4, 0, 4, 4) : new Thickness(10, 0),
             Padding = new Thickness(0, 10),
             VerticalTextAlignment = TextAlignment.Center,
             HorizontalTextAlignment = TextAlignment.Center,
             VerticalOptions = LayoutOptions.Fill,
-            HorizontalOptions = LayoutOptions.Fill,
+            HorizontalOptions = LayoutOptions.Center,
             BackgroundColor = DefaultVerticalBackgroundColor.WithAlpha(0.05),
             Lines = 1,
-            AutoFit = AutoFit.None,
+            AutoFit = AutoFit.None
         };
         readonly BoxView _downArrowSeparator = new BoxView { Color = DefaultVerticalSeparatorColor, HeightRequest = DefaultSeparatorThickness, Margin = 0 };
-#pragma warning restore CC0033 // Dispose Fields Properly
 
 
         readonly Xamarin.Forms.StackLayout _stackLayout = new Xamarin.Forms.StackLayout
@@ -343,12 +373,13 @@ namespace Forms9Patch
         /// <param name="target">VisualElement to target</param>
         /// <param name="htmlTexts">List of text for menu items (with optional HTML markup)</param>
         /// <returns></returns>
-        public static TargetedMenu Create(VisualElement target, List<string> htmlTexts = null)
+        public static TargetedMenu Create(VisualElement target, List<string> htmlTexts = null, FeedbackEffect pushedFeedback = FeedbackEffect.Inquiry)
         {
             var targetedMenu = new TargetedMenu(target);
             targetedMenu.SegmentsFromHtmlTexts(htmlTexts);
             targetedMenu.OutlineColor = Color.Gray;
             targetedMenu.OutlineWidth = 1;
+            targetedMenu.PushedFeedback = pushedFeedback;
             targetedMenu.IsVisible = true;
             return targetedMenu;
         }
@@ -360,12 +391,13 @@ namespace Forms9Patch
         /// <param name="point"></param>
         /// <param name="htmlTexts"></param>
         /// <returns></returns>
-        public static TargetedMenu Create(VisualElement target, Point point, List<string> htmlTexts = null)
+        public static TargetedMenu Create(VisualElement target, Point point, List<string> htmlTexts = null, FeedbackEffect pushedFeedback = FeedbackEffect.Inquiry)
         {
             var targetedMenu = new TargetedMenu(target, point);
             targetedMenu.SegmentsFromHtmlTexts(htmlTexts);
             targetedMenu.OutlineColor = Color.Gray;
             targetedMenu.OutlineWidth = 1;
+            targetedMenu.PushedFeedback = pushedFeedback;
             targetedMenu.IsVisible = true;
             return targetedMenu;
         }
@@ -376,11 +408,12 @@ namespace Forms9Patch
         /// <returns>The vertical.</returns>
         /// <param name="target">Target.</param>
         /// <param name="htmlTexts">Html texts.</param>
-        public static TargetedMenu CreateVertical(VisualElement target, List<string> htmlTexts = null)
+        public static TargetedMenu CreateVertical(VisualElement target, List<string> htmlTexts = null, FeedbackEffect pushedFeedback = FeedbackEffect.Inquiry)
         {
             var targetedMenu = new TargetedMenu(target);
             targetedMenu.SegmentsFromHtmlTexts(htmlTexts);
             targetedMenu.Orientation = StackOrientation.Vertical;
+            targetedMenu.PushedFeedback = pushedFeedback;
             targetedMenu.IsVisible = true;
             return targetedMenu;
         }
@@ -392,11 +425,12 @@ namespace Forms9Patch
         /// <param name="target">Target.</param>
         /// <param name="point">Point.</param>
         /// <param name="htmlTexts">Html texts.</param>
-        public static TargetedMenu CreateVertical(VisualElement target, Point point, List<string> htmlTexts = null)
+        public static TargetedMenu CreateVertical(VisualElement target, Point point, List<string> htmlTexts = null, FeedbackEffect pushedFeedback = FeedbackEffect.Inquiry)
         {
             var targetedMenu = new TargetedMenu(target, point);
             targetedMenu.SegmentsFromHtmlTexts(htmlTexts);
             targetedMenu.Orientation = StackOrientation.Vertical;
+            targetedMenu.PushedFeedback = pushedFeedback;
             targetedMenu.IsVisible = true;
             return targetedMenu;
         }
@@ -446,12 +480,13 @@ namespace Forms9Patch
 
         #region Disposal
         bool _disposed;
-        static Thickness _hzSegmentPadding = Device.RuntimePlatform == Device.UWP
-                    ? new Thickness(8, 4, 8, 0)
-                    : Device.RuntimePlatform == Device.Android
+        static Thickness _hzSegmentPadding = // Device.RuntimePlatform == Device.UWP
+                                             //        ? new Thickness(8, 4, 8, 0)
+                                             //        : 
+            Device.RuntimePlatform == Device.Android
                         ? new Thickness(8, 0)
                         : new Thickness(4, 0);
-        static Thickness _vtSegmentPadding = Device.RuntimePlatform == Device.UWP ? new Thickness(28, 4, 28, 8) : new Thickness(28, 4);
+        static Thickness _vtSegmentPadding = new Thickness(28, 8); //  Device.RuntimePlatform == Device.UWP ? new Thickness(28, 4, 28, 8) : new Thickness(28, 4);
         /// <summary>
         /// Instance is being disposed
         /// </summary>
@@ -461,6 +496,9 @@ namespace Forms9Patch
             if (!_disposed && disposing)
             {
                 _disposed = true;
+
+                SegmentTapped = null;
+
                 foreach (var segment in Segments)
                     UnconfiguerButton(segment._button);
 
@@ -501,57 +539,63 @@ namespace Forms9Patch
         /// <param name="propertyName"></param>
         protected override void OnPropertyChanged(string propertyName = null)
         {
-            if (!P42.Utils.Environment.IsOnMainThread)
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
             {
-                Device.BeginInvokeOnMainThread(() => OnPropertyChanged(propertyName));
-                return;
-            }
-            base.OnPropertyChanged(propertyName);
+                base.OnPropertyChanged(propertyName);
 
-            if (propertyName == BackgroundColorProperty.PropertyName)
-                UpdateLayout();
-            else if (propertyName == TextColorProperty.PropertyName)
-                UpdateLayout();
-            else if (propertyName == FontSizeProperty.PropertyName)
-                UpdateLayout();
-            else if (propertyName == SeparatorColorProperty.PropertyName)
-                UpdateLayout();
-            else if (propertyName == SeparatorThicknessProperty.PropertyName)
-                UpdateLayout();
-            else if (propertyName == HapticEffectProperty.PropertyName)
-            {
-                foreach (VisualElement visualElement in _stackLayout.Children)
-                    if (visualElement is Button button)
-                        button.HapticEffect = HapticEffect;
-            }
-            else if (propertyName == HapticEffectModeProperty.PropertyName)
-            {
-                foreach (VisualElement visualElement in _stackLayout.Children)
-                    if (visualElement is Button button)
-                        button.HapticEffectMode = HapticEffectMode;
-            }
-            else if (propertyName == SoundEffectProperty.PropertyName)
-            {
-                foreach (VisualElement visualElement in _stackLayout.Children)
-                    if (visualElement is Button button)
-                        button.SoundEffect = SoundEffect;
-            }
-            else if (propertyName == SoundEffectModeProperty.PropertyName)
-            {
-                foreach (VisualElement visualElement in _stackLayout.Children)
-                    if (visualElement is Button button)
-                        button.SoundEffectMode = SoundEffectMode;
-            }
-            else if (propertyName == OrientationProperty.PropertyName)
-            {
-                _forewardLength = -1;
-                _backwardLength = -1;
-                UpdateOrientation();
-            }
-            else if (propertyName == IconFontFamilyProperty.PropertyName)
-                foreach (var child in _stackLayout.Children)
-                    if (child is Button button)
-                        button.IconFontFamily = IconFontFamily;
+                if (propertyName == BackgroundColorProperty.PropertyName)
+                    UpdateLayout();
+                else if (propertyName == TextColorProperty.PropertyName)
+                    UpdateLayout();
+                else if (propertyName == FontSizeProperty.PropertyName)
+                    UpdateLayout();
+                else if (propertyName == SeparatorColorProperty.PropertyName)
+                    UpdateLayout();
+                else if (propertyName == SeparatorThicknessProperty.PropertyName)
+                    UpdateLayout();
+                else if (propertyName == HapticEffectProperty.PropertyName)
+                {
+                    foreach (VisualElement visualElement in _stackLayout.Children)
+                        if (visualElement is Button button)
+                            button.HapticEffect = HapticEffect;
+                }
+                else if (propertyName == HapticEffectModeProperty.PropertyName)
+                {
+                    foreach (VisualElement visualElement in _stackLayout.Children)
+                        if (visualElement is Button button)
+                            button.HapticEffectMode = HapticEffectMode;
+                }
+                else if (propertyName == SoundEffectProperty.PropertyName)
+                {
+                    foreach (VisualElement visualElement in _stackLayout.Children)
+                        if (visualElement is Button button)
+                            button.SoundEffect = SoundEffect;
+                }
+                else if (propertyName == SoundEffectModeProperty.PropertyName)
+                {
+                    foreach (VisualElement visualElement in _stackLayout.Children)
+                        if (visualElement is Button button)
+                            button.SoundEffectMode = SoundEffectMode;
+                }
+                else if (propertyName == OrientationProperty.PropertyName)
+                {
+                    _forewardLength = -1;
+                    _backwardLength = -1;
+                    UpdateOrientation();
+                }
+                else if (propertyName == IconFontFamilyProperty.PropertyName)
+                {
+                    foreach (var child in _stackLayout.Children)
+                        if (child is Button button)
+                            button.IconFontFamily = IconFontFamily;
+                }
+                else if (propertyName == IconFontSizeProperty.PropertyName)
+                {
+                    foreach (var child in _stackLayout.Children)
+                        if (child is Button button)
+                            button.IconFontSize = IconFontSize;
+                }
+            });
         }
         #endregion
 
@@ -563,6 +607,7 @@ namespace Forms9Patch
                     ? (Orientation == StackOrientation.Horizontal ? DefaultHorizontalTextColor : DefaultVerticalTextColor)
                     : TextColor;
             segment._button.IconFontFamily = IconFontFamily;
+            segment._button.IconFontSize = IconFontSize;
             segment._button.FontFamily = FontFamily;
             segment._button.Text = segment.Text;
             segment._button.HtmlText = segment.HtmlText;
@@ -602,7 +647,7 @@ namespace Forms9Patch
         #region Collection Management
 
         bool _updatingCollection;
-        DateTime _lastUpdateComplete = DateTime.MinValue;
+        DateTime _lastUpdateComplete = DateTime.MinValue.AddYears(1);
         void OnSegmentsCollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
             _lastUpdateComplete = DateTime.MaxValue;
@@ -657,13 +702,13 @@ namespace Forms9Patch
 
 
         #region Event Handlers
-        private void OnSizeChanged(object sender, System.EventArgs e)
+        private void OnSizeChanged(object sender, EventArgs e)
             => UpdateLayout();
 
 
         bool _updatingButtonSize;
-        DateTime _lastButtonSizeChangeComplete = DateTime.MinValue;
-        private void OnButtonSizeChanged(object sender, System.EventArgs e)
+        DateTime _lastButtonSizeChangeComplete = DateTime.MinValue.AddYears(1);
+        private void OnButtonSizeChanged(object sender, EventArgs e)
         {
             _lastButtonSizeChangeComplete = DateTime.MaxValue;
             if (!_updatingButtonSize)
@@ -732,24 +777,52 @@ namespace Forms9Patch
             UpdateLayout();
         }
 
-        static BindableProperty _buttonLengthProperty = BindableProperty.Create("ButtonLength", typeof(double), typeof(TargetedMenu), -1.0);
-        double ButtonLength(Forms9Patch.Button button)
+        static readonly BindableProperty _buttonLengthProperty = BindableProperty.Create("ButtonLength", typeof(double), typeof(TargetedMenu), -1.0);
+        double ButtonLength(Button button)
         {
-            if (button.GetValue(_buttonLengthProperty) is double length && length > 11)
-                return length;
+            //if (button.GetValue(_buttonLengthProperty) is double length && length > 11)
+            //    return length;
             var size = button.Measure(double.PositiveInfinity, double.PositiveInfinity, MeasureFlags.IncludeMargins);
             var result = Math.Ceiling(Orientation == StackOrientation.Horizontal
                 ? size.Request.Width
                 : size.Request.Height);
-            if (result > 11)
-                button.SetValue(_buttonLengthProperty, result);
+            //if (result > 11)
+            //    button.SetValue(_buttonLengthProperty, result);
+            //System.Diagnostics.Debug.WriteLine("TargetedMenu" + P42.Utils.ReflectionExtensions.CallerString() + ": Length: " + result);
             return result;
         }
 
         double AvailableSpace()
-            => Math.Floor(Orientation == StackOrientation.Horizontal
-            ? Width - _bubbleLayout.Padding.HorizontalThickness - _bubbleLayout.Margin.HorizontalThickness - Padding.HorizontalThickness - Margin.HorizontalThickness - 2 * OutlineWidth - _stackLayout.Padding.HorizontalThickness - _stackLayout.Margin.HorizontalThickness
-            : Height - _upArrowButton.Padding.VerticalThickness - _upArrowButton.Margin.VerticalThickness - Padding.VerticalThickness - Margin.VerticalThickness - 2 * OutlineWidth - _stackLayout.Padding.VerticalThickness - _stackLayout.Margin.VerticalThickness);
+        {
+            var targetPage = this;
+            if (Target is VisualElement target)
+            {
+                var targetBounds = target is PopupBase popup
+                        ? DependencyService.Get<IDescendentBounds>().PageDescendentBounds(targetPage, popup.DecorativeContainerView)
+                        : DependencyService.Get<IDescendentBounds>().PageDescendentBounds(targetPage, Target);
+
+                if (base.Available(Width, Height, targetBounds) is Thickness available && !available.IsEmpty())
+                {
+                    var maxHz = Math.Max(available.Left, available.Right);
+                    var maxVt = Math.Max(available.Top, available.Bottom);
+                    if (Orientation == StackOrientation.Horizontal)
+                    {
+                        if (maxVt > 40)
+                            return Math.Floor(Width - _bubbleLayout.Padding.HorizontalThickness - _bubbleLayout.Margin.HorizontalThickness - Padding.HorizontalThickness - Margin.HorizontalThickness - 2 * OutlineWidth - _stackLayout.Padding.HorizontalThickness - _stackLayout.Margin.HorizontalThickness);
+                        if (maxHz > 200)
+                            return Math.Floor(maxHz - _bubbleLayout.Padding.HorizontalThickness - _bubbleLayout.Margin.HorizontalThickness - Padding.HorizontalThickness - Margin.HorizontalThickness - 2 * OutlineWidth - _stackLayout.Padding.HorizontalThickness - _stackLayout.Margin.HorizontalThickness);
+                    }
+                    else
+                    {
+                        if (maxVt > 120)
+                            return Math.Floor(maxVt - _upArrowButton.Padding.VerticalThickness - _upArrowButton.Margin.VerticalThickness - Padding.VerticalThickness - Margin.VerticalThickness - 2 * OutlineWidth - _stackLayout.Padding.VerticalThickness - _stackLayout.Margin.VerticalThickness);
+                    }
+                }
+            }
+            return Orientation == StackOrientation.Horizontal
+                ? Math.Floor(Width - _bubbleLayout.Padding.HorizontalThickness - _bubbleLayout.Margin.HorizontalThickness - Padding.HorizontalThickness - Margin.HorizontalThickness - 2 * OutlineWidth - _stackLayout.Padding.HorizontalThickness - _stackLayout.Margin.HorizontalThickness)
+                : Math.Floor(Height - _upArrowButton.Padding.VerticalThickness - _upArrowButton.Margin.VerticalThickness - Padding.VerticalThickness - Margin.VerticalThickness - 2 * OutlineWidth - _stackLayout.Padding.VerticalThickness - _stackLayout.Margin.VerticalThickness);
+        }
 
         void SetSeparatorThickness(BoxView separator)
         {
@@ -772,15 +845,30 @@ namespace Forms9Patch
         double _forewardLength;
         double _backwardLength;
 
-
+        bool _pendingUpdateRequest;
+        bool _updating;
+        bool _layoutRendered;
         void UpdateLayout()
         {
             if (_updatingCollection)
                 return;
-            if (P42.Utils.Environment.IsOnMainThread)
+
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
             {
                 if (Width < 0 || !IsVisible || Segments.Count < 1)
                     return;
+
+                if (_updating)
+                {
+                    _pendingUpdateRequest = true;
+                    return;
+                }
+
+                _layoutRendered = true;
+
+                //System.Diagnostics.Debug.WriteLine("TargetedMenu" + P42.Utils.ReflectionExtensions.CallerString() + ": ENTER");
+                _updating = true;
+                _pendingUpdateRequest = false;
 
                 HorizontalOptions = LayoutOptions.Center;
                 VerticalOptions = LayoutOptions.Center;
@@ -807,10 +895,14 @@ namespace Forms9Patch
                 _downArrowButton.IsVisible = false;
                 _downArrowSeparator.IsVisible = false;
 
-                _leftArrowButton.IconImage.HeightRequest = _leftArrowButton.IconImage.WidthRequest = FontSize;
-                _rightArrowButton.IconImage.HeightRequest = _rightArrowButton.IconImage.WidthRequest = FontSize;
-                _upArrowButton.IconImage.HeightRequest = _upArrowButton.IconImage.WidthRequest = 2 * FontSize;
-                _downArrowButton.IconImage.HeightRequest = _downArrowButton.IconImage.WidthRequest = 2 * FontSize;
+                _leftArrowButton.IconImage.HeightRequest = FontSize * .8;
+                _leftArrowButton.IconImage.WidthRequest = 2 * FontSize;
+                _rightArrowButton.IconImage.HeightRequest = FontSize * .8;
+                _rightArrowButton.IconImage.WidthRequest = 2 * FontSize;
+                _upArrowButton.IconImage.HeightRequest = FontSize * .8;
+                _upArrowButton.IconImage.WidthRequest = 2 * FontSize;
+                _downArrowButton.IconImage.HeightRequest = FontSize * .8;
+                _downArrowButton.IconImage.WidthRequest = 2 * FontSize;
 
                 var backwardButton = Orientation == StackOrientation.Horizontal ? _leftArrowButton : _upArrowButton;
                 var backwardSeparator = Orientation == StackOrientation.Horizontal ? _leftArrowSeparator : _upArrowSeparator;
@@ -849,12 +941,13 @@ namespace Forms9Patch
                 var calculatedLength = 0.0;
                 for (int i = 4; i < _stackLayout.Children.Count - 4; i += 2)
                 {
-                    var button = _stackLayout.Children[i] as Forms9Patch.Button;
+                    var button = _stackLayout.Children[i] as Button;
                     var separator = _stackLayout.Children[i + 1] as BoxView;
                     button.FontSize = FontSize > 0 ? FontSize : 20;
 
                     var thisButtonAdds = ButtonLength(button) + _stackLayout.Spacing + SeparatorThickness + 2 + _stackLayout.Spacing;
-                    if (segmentIndex < Segments.Count && pageLength + thisButtonAdds + _forewardLength >= AvailableSpace())
+                    if (segmentIndex < Segments.Count
+                        && pageLength + thisButtonAdds + _forewardLength >= AvailableSpace())
                     {
                         if (pageIndex == _currentPage)
                             calculatedLength = pageLength + _forewardLength;
@@ -875,8 +968,7 @@ namespace Forms9Patch
                     segmentIndex++;
                 }
 
-                forewardSeparator.IsVisible = false;
-                forewardButton.IsVisible = forewardArrowShouldBeVisible;
+                forewardSeparator.IsVisible = forewardButton.IsVisible = forewardArrowShouldBeVisible;
 
                 if (Orientation == StackOrientation.Vertical)
                 {
@@ -885,12 +977,17 @@ namespace Forms9Patch
                     _stackLayout.HeightRequest = -1;
                 }
                 else if (Device.RuntimePlatform == Device.iOS)
-                    _stackLayout.HeightRequest = 34;
+                    _stackLayout.HeightRequest = 28;
                 else if (Device.RuntimePlatform != Device.UWP)
                     _stackLayout.HeightRequest = 28;
-            }
-            else
-                Device.BeginInvokeOnMainThread(UpdateLayout);
+
+                _updating = false;
+                if (_pendingUpdateRequest)
+                    UpdateLayout();
+
+                //System.Diagnostics.Debug.WriteLine("TargetedMenu" + P42.Utils.ReflectionExtensions.CallerString() + ": EXIT");
+
+            });
         }
 
         #endregion
@@ -913,13 +1010,14 @@ namespace Forms9Patch
         /// Event fired with a menu item (segment) has been tapped
         /// </summary>
         public event SegmentedControlEventHandler SegmentTapped;
-        async void OnButtonTapped(object sender, System.EventArgs e)
+        async void OnButtonTapped(object sender, EventArgs e)
         {
             for (int i = 0; i < _segments.Count; i++)
             {
                 var button = _segments[i]._button;
                 if (button.Equals(sender))
                 {
+                    SelectedSegment = _segments[i];
                     SegmentTapped?.Invoke(this, new SegmentedControlEventArgs(i, _segments[i]));
                     break;
                 }
@@ -928,12 +1026,26 @@ namespace Forms9Patch
             await CancelAsync(sender);
         }
 
+        bool _firstAppearance = true;
         /// <summary>
-        /// Invoked when appearing
+        /// Called when appearing animation has ended
         /// </summary>
-        protected override void OnAppearing()
-            => UpdateLayout();
-
+        protected override void OnAppearingAnimationEnd()
+        {
+            //System.Diagnostics.Debug.WriteLine("TargetedMenu" + P42.Utils.ReflectionExtensions.CallerString() + ": ENTER");
+            base.OnAppearingAnimationEnd();
+            if (_firstAppearance && Device.RuntimePlatform == Device.Android && Orientation == StackOrientation.Vertical)
+            {
+                foreach (var child in _stackLayout.Children)
+                    if (child is Button button)
+                        button.Padding = _vtSegmentPadding;
+                UpdateLayout();
+            }
+            _firstAppearance = false;
+            if (_layoutRendered)
+                UpdateLayout();
+            //System.Diagnostics.Debug.WriteLine("TargetedMenu" + P42.Utils.ReflectionExtensions.CallerString() + ": EXIT");
+        }
         #endregion
     }
 }

@@ -9,18 +9,34 @@ namespace Forms9Patch
     public static class ColorExtension
     {
         /// <summary>
-        /// Rgbs the blend.
+        /// Interpolates between two colors - keeping the Alpha of the first (unless it's transparent ... then its white with alpha 0);
         /// </summary>
         /// <returns>The blend.</returns>
         /// <param name="c">C.</param>
         /// <param name="c2">C2.</param>
         /// <param name="percent">Percent.</param>
-        public static Color RgbBlend(this Color c, Color c2, double percent)
+        public static Color RgbHybridBlend(this Color c, Color c2, double percent)
         {
             var c1 = new Color(c.R, c.G, c.B, c.A);
             if (c1 == Color.Transparent)
                 c1 = new Color(1.0, 1.0, 1.0, 0.0);
             var A = c1.A;
+            var R = c1.R + (c2.R - c1.R) * percent;
+            var G = c1.G + (c2.G - c1.G) * percent;
+            var B = c1.B + (c2.B - c1.B) * percent;
+            return new Color(R, G, B, A);
+        }
+
+        /// <summary>
+        /// Interpolates between two colors
+        /// </summary>
+        /// <param name="c1"></param>
+        /// <param name="c2"></param>
+        /// <param name="percent"></param>
+        /// <returns></returns>
+        public static Color RgbaBlend(this Color c1, Color c2, double percent)
+        {
+            var A = c1.A + (c2.A - c1.A) * percent;
             var R = c1.R + (c2.R - c1.R) * percent;
             var G = c1.G + (c2.G - c1.G) * percent;
             var B = c1.B + (c2.B - c1.B) * percent;
@@ -34,9 +50,8 @@ namespace Forms9Patch
         /// <param name="c">C.</param>
         /// <param name="alpha">Alpha.</param>
         public static Color WithAlpha(this Color c, double alpha)
-        {
-            return new Color(c.R, c.G, c.B, alpha);
-        }
+            => new Color(c.R, c.G, c.B, alpha);
+        
 
         /// <summary>
         /// Tests if the color is one of the default values
@@ -44,9 +59,8 @@ namespace Forms9Patch
         /// <param name="c"></param>
         /// <returns></returns>
         public static bool IsDefault(this Color c)
-        {
-            return c == default || c == Color.Default;
-        }
+            =>  c == default || c == Color.Default;
+        
 
         /// <summary>
         /// Tests if the color is a default or is transparent
@@ -54,9 +68,8 @@ namespace Forms9Patch
         /// <param name="c"></param>
         /// <returns></returns>
         public static bool IsDefaultOrTransparent(this Color c)
-        {
-            return IsDefault(c) || c.A == 0;
-        }
+            =>  IsDefault(c) || c.A == 0;
+        
 
         /// <summary>
         /// Returns a Xamarin.Forms.Color's red value in byte form
@@ -92,9 +105,15 @@ namespace Forms9Patch
         /// <returns>The int rgb color string.</returns>
         /// <param name="color">Color.</param>
         public static string ToIntRgbColorString(this Color color)
-        {
-            return color.ByteR() + "," + color.ByteG() + "," + color.ByteB();
-        }
+            => color.ByteR() + "," + color.ByteG() + "," + color.ByteB();
+        
+        /// <summary>
+        /// Returns a sring with comma separated, 0-255, integer values for color's RGBA
+        /// </summary>
+        /// <param name="color"></param>
+        /// <returns></returns>
+        public static string ToIntRgbaColorString(this Color color)
+            => color.ByteR() + "," + color.ByteG() + "," + color.ByteB() + "," + color.ByteA();
 
         /// <summary>
         /// Returns a string with comma separated, 0-255, integer values for color's RGBA
@@ -160,7 +179,10 @@ namespace Forms9Patch
         /// <param name="s">the color string</param>
         public static Color ToColor(this string s)
         {
-            if (s.ToLower().StartsWith("rgb(", StringComparison.Ordinal))
+            if (string.IsNullOrWhiteSpace(s))
+                return Color.Default;
+            s = s.Trim();
+            if (s.ToLower().StartsWith("rgb(", StringComparison.OrdinalIgnoreCase))
             {
                 //var values = s.Substring(4, s.Length - 5).Split(',').Select(int.Parse).ToArray();
                 var components = s.Substring(4, s.Length - 5).Split(',');
@@ -171,7 +193,7 @@ namespace Forms9Patch
                 var b = int.Parse(components[2]);
                 return Color.FromRgb(r, g, b);
             }
-            if (s.ToLower().StartsWith("rgba(", StringComparison.Ordinal))
+            if (s.ToLower().StartsWith("rgba(", StringComparison.OrdinalIgnoreCase))
             {
                 //var values = s.Substring(5, s.Length - 6).Split(',').Select(int.Parse).ToArray();
                 var components = s.Substring(5, s.Length - 6).Split(',');
@@ -183,7 +205,7 @@ namespace Forms9Patch
                 var a = int.Parse(components[3]);
                 return Color.FromRgba(r, g, b, a);
             }
-            if (s.StartsWith("#", StringComparison.Ordinal))
+            if (s.StartsWith("#", StringComparison.OrdinalIgnoreCase))
             {
                 var color = Color.FromHex(s);
                 return color;

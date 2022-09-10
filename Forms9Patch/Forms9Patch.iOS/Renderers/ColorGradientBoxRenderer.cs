@@ -39,6 +39,9 @@ namespace Forms9Patch.iOS
 
 		public override void Draw (CGRect rect)
 		{
+			if (_disposed)
+				return;
+
 			ContentMode = UIViewContentMode.Redraw;
 			//ContentMode = UIViewContentMode.
 
@@ -59,7 +62,7 @@ namespace Forms9Patch.iOS
 			//BackgroundColor = Color.Transparent.ToUIColor();
 		}
 
-		/*
+        /*
 		protected override void OnElementPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
 		{
 			base.OnElementPropertyChanged(sender, e);
@@ -70,5 +73,16 @@ namespace Forms9Patch.iOS
 				System.Diagnostics.Debug.WriteLine("\tHeight=["+Element.Height+"] ["+NativeView.Bounds.Height+"]");
 		}
 		*/
-	}
+
+        bool _disposed;
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && !_disposed)
+            {
+                _disposed = true;
+                _oldSublayer?.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+    }
 }

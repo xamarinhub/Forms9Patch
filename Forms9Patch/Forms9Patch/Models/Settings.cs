@@ -2,17 +2,40 @@
 using System.Collections.Generic;
 using System.Reflection;
 using Xamarin.Forms;
+using System.ComponentModel;
+using System.Threading.Tasks;
+using Xamarin.Essentials;
 
 namespace Forms9Patch
 {
     /// <summary>
     /// Forms9Patch Settings (for use by Forms9Patch PCL code).
     /// </summary>
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     public static class Settings
     {
         static Settings()
         {
             P42.Utils.Environment.EmbeddedResourceAssemblyResolver = AssemblyExtensions.AssemblyFromResourceId;
+            LinkAssemblies();
+        }
+
+        private static void LinkAssemblies()
+        {
+            if (false.Equals(true))
+            {
+#pragma warning disable IDE0059 // Unnecessary assignment of a value
+                var v1 = new BaseCellView();
+                var v2 = new GroupHeaderView();
+                var v3 = new BlankCellView();
+                var v4 = new NullItemCellView();
+                var v5 = new TextCellViewContent();
+                var v6 = new HeaderCell<Label>();
+                var v7 = new ItemCell<Label>();
+                var v8 = new Cell<Label>();
+#pragma warning restore IDE0059 // Unnecessary assignment of a value
+            }
         }
 
         #region Shadow properties
@@ -28,7 +51,6 @@ namespace Forms9Patch
         #endregion
 
         internal static TimeSpan MsUntilTapped = TimeSpan.FromMilliseconds(210);
-
 
         #region Swipe menu
         /// <summary>
@@ -72,15 +94,6 @@ namespace Forms9Patch
 
         public static KeyClicks KeyClicks = KeyClicks.Default;
 
-        /// <summary>
-        /// Haptic effect to use if HapticEffect = Default;
-        /// </summary>
-        public static EffectMode HapticEffectMode = EffectMode.Default;
-
-        /// <summary>
-        /// Sound effect to use if SoundEffect = Default;
-        /// </summary>
-        public static EffectMode SoundEffectMode = EffectMode.Default;
 
 
 
@@ -91,12 +104,15 @@ namespace Forms9Patch
             if (_confirmed)
                 return;
 
-            var platformSettings = DependencyService.Get<ISettings>();
-            if (platformSettings != null)
+            if (DependencyService.Get<ISettings>() is ISettings platformSettings)
             {
                 platformSettings.LazyInit();
                 _confirmed = true;
             }
+            
+            if (!_confirmed)
+                throw new Exception("Unable to confirm initialization.  Did you forget to add " +
+                    "Forms9Patch." + Device.RuntimePlatform + ".Settings.Initialize() after XamarinForms.Forms.Forms.Init()?");
         }
         #endregion
 
@@ -114,7 +130,6 @@ namespace Forms9Patch
 
         internal static List<Assembly> IncludedAssemblies => NativeSettings?.IncludedAssemblies;
         #endregion
-
 
     }
 }

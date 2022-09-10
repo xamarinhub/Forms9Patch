@@ -20,52 +20,26 @@ namespace Forms9Patch.Droid
     {
         internal delegate bool BoolDelegate();
 
-        static bool _defaultTextSizeInitialized;
-        static float _defaultTextSize;
-        internal static float DefaultTextSize
+
+
+        internal static float DefaultTextSize { get; private set; }
+        internal static int DefaultTextColorArgbInt { get; private set; }
+        internal static Android.Graphics.Color DefaultTextColor { get; private set; }
+        internal static float DefaultLineSpacingExtra { get; private set; }
+        internal static float DefaultLineSpacingMultiplier { get; private set; }
+
+        static F9PTextView()
         {
-            get
+            using (var architypeTextView = new TextView(Forms9Patch.Droid.Settings.Context))
             {
-                if (!_defaultTextSizeInitialized)
-                {
-                    var systemFontSize = (new TextView(Forms9Patch.Droid.Settings.Context)).TextSize;
-                    _defaultTextSize = systemFontSize / Settings.Context.Resources.DisplayMetrics.Density;
-                    _defaultTextSizeInitialized = true;
-                }
-                return _defaultTextSize;
+                var systemFontSize = architypeTextView.TextSize;
+                DefaultTextSize = systemFontSize / Settings.Context.Resources.DisplayMetrics.Density;
+                DefaultTextColorArgbInt = architypeTextView.CurrentTextColor;
+                DefaultTextColor = new Android.Graphics.Color(DefaultTextColorArgbInt);
+                DefaultLineSpacingExtra = architypeTextView.LineSpacingExtra;
+                DefaultLineSpacingMultiplier = architypeTextView.LineSpacingMultiplier;
             }
         }
-
-        static bool _defaultTextColorArgbIntSet;
-        static int _defaultTextColorArgbInt;
-        internal static int DefaultTextColorArgbInt
-        {
-            get
-            {
-                if (!_defaultTextColorArgbIntSet)
-                {
-                    _defaultTextColorArgbInt = (new TextView(Forms9Patch.Droid.Settings.Context)).CurrentTextColor;
-                    _defaultTextColorArgbIntSet = true;
-                }
-                return _defaultTextColorArgbInt;
-            }
-        }
-
-        static bool _defaultTextColorSet;
-        static Android.Graphics.Color _defaultTextColor;
-        internal static Android.Graphics.Color DefaultTextColor
-        {
-            get
-            {
-                if (!_defaultTextColorSet)
-                {
-                    _defaultTextColor = new Android.Graphics.Color(DefaultTextColorArgbInt);
-                    _defaultTextColorSet = true;
-                }
-                return _defaultTextColor;
-            }
-        }
-
 
         #region Fields
         static int _instances;
@@ -154,8 +128,36 @@ namespace Forms9Patch.Droid
                     base.TextSize = value;
             }
         }
+
         #endregion
 
+
+        #region update
+        public void UpdateFrom(F9PTextView control)
+        {
+            if (control != null && control != this)
+            {
+                if (Android.OS.Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.JellyBeanMr1)
+                {
+                    LayoutDirection = control.LayoutDirection;
+                    if (Android.OS.Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.Lollipop)
+                    {
+                        FontFeatureSettings = control.FontFeatureSettings;
+                        LetterSpacing = control.LetterSpacing;
+                        if (Android.OS.Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.P)
+                        {
+                            FallbackLineSpacing = control.FallbackLineSpacing;
+                            LineHeight = control.LineHeight;
+                        }
+                    }
+                }
+                LayoutParameters = control.LayoutParameters;
+                PaintFlags = control.PaintFlags;
+
+
+            }
+        }
+        #endregion
 
         #region Touch to Index
         internal int IndexForPoint(Android.Graphics.Point p)
@@ -180,19 +182,42 @@ namespace Forms9Patch.Droid
                 base.RequestLayout();
         }
 
-        bool _skip;
+        //bool _skip;
+        bool invalidating = false;
+        bool pendingInvalidate = false;
         public override void Invalidate()
         {
             if (IsNativeDrawEnabled)
             {
+                /*
                 if (!_skip)
                     base.Invalidate();
                 _skip = false;
+                */
+                if (invalidating)
+                {
+                    pendingInvalidate = true;
+                    System.Diagnostics.Debug.WriteLine("pending");
+                    return;
+                }
+                invalidating = true;
+                //Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
+                //{
+                    base.Invalidate();
+                    invalidating = false;
+                    if (pendingInvalidate)
+                    {
+                        pendingInvalidate = false;
+                        Invalidate();
+                    }
+                //});
+
             }
         }
 
         public void SkipNextInvalidate()
-            => _skip = true;
+        { }
+        //=> _skip = true;
 
         #endregion
 

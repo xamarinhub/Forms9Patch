@@ -22,6 +22,7 @@ using P42.Utils;
 [assembly: Dependency(typeof(Forms9Patch.Droid.ClipboardService))]
 namespace Forms9Patch.Droid
 {
+    [Xamarin.Forms.Internals.Preserve(AllMembers = true)]
     public class ClipboardService : Forms9Patch.IClipboardService
     {
 
@@ -349,9 +350,9 @@ namespace Forms9Patch.Droid
             if (item == null || item.Value == null)
                 return null;
 
-            var parcelFileMode = mode.Equals("rw", StringComparison.InvariantCultureIgnoreCase) ? ParcelFileMode.ReadWrite : ParcelFileMode.ReadOnly;
+            var parcelFileMode = mode.Equals("rw", StringComparison.OrdinalIgnoreCase) ? ParcelFileMode.ReadWrite : ParcelFileMode.ReadOnly;
             Java.IO.File javaFile;
-            if (item.Value is System.Uri itemUri && itemUri.AbsoluteUri.StartsWith("file://", StringComparison.InvariantCultureIgnoreCase))
+            if (item.Value is System.Uri itemUri && itemUri.AbsoluteUri.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
                 javaFile = new Java.IO.File(itemUri.AbsolutePath);
             else if (item.Value is FileInfo fileInfo)
                 javaFile = new Java.IO.File(fileInfo.FullName);

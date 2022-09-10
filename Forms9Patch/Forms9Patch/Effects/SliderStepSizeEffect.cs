@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Linq;
 using System.Reflection;
 using Xamarin.Forms;
 
@@ -7,6 +8,8 @@ namespace Forms9Patch
     /// <summary>
     /// Enabled StepSize control of Xamarin.Forms.Slider element
     /// </summary>
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     public class SliderStepSizeEffect : RoutingEffect, INotifyPropertyChanged
     {
         static SliderStepSizeEffect()
@@ -26,10 +29,10 @@ namespace Forms9Patch
         /// </summary>
         public double StepSize
         {
-            get => _stepSize; 
+            get => _stepSize;
             set
             {
-                if (value != _stepSize)
+                if (System.Math.Abs(value - _stepSize) > (_stepSize * 0.01))
                 {
                     _stepSize = value;
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(StepSize)));
@@ -65,8 +68,9 @@ namespace Forms9Patch
 #pragma warning restore IDE0060 // Remove unused parameter
 #pragma warning restore CC0057 // Unused parameters
         {
-            var effect = new SliderStepSizeEffect();
-            if (effect != null)
+            if (slider.Effects.Any(e => e is SliderStepSizeEffect))
+                return true;
+            if (new SliderStepSizeEffect() is SliderStepSizeEffect effect)
             {
                 slider.Effects.Add(effect);
                 return slider.Effects.Contains(effect);

@@ -18,10 +18,11 @@ namespace Forms9Patch
         static readonly Dictionary<string, List<Image>> _views = new Dictionary<string, List<Image>>();
         static readonly object _constructorLock = new object();
         //static readonly Dictionary<string, object> _locks = new Dictionary<string, object>();
-        static readonly Dictionary<string, SemaphoreSlim> _locks = new Dictionary<string, SemaphoreSlim>();
+        static readonly Dictionary<string, (DateTime Start, SemaphoreSlim Lock)> _locks = new Dictionary<string, (DateTime Start, SemaphoreSlim Lock)>();
 
 #pragma warning disable 1998
-        internal static async Task<F9PImageData> FetchF9pImageData(this Xamarin.Forms.ImageSource imageSource, Image view, CancellationToken cancellationToken = new CancellationToken())
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Code Quality", "IDE0068:Use recommended dispose pattern", Justification = "<Pending>")]
+        internal static async Task<F9PImageData> FetchF9pImageData(this Xamarin.Forms.ImageSource imageSource, Image view, CancellationToken cancellationToken = new CancellationToken(), FailAction failAction = FailAction.ShowAlert)
 #pragma warning restore 1998
         {
             F9PImageData f9pImageData = null;
@@ -39,10 +40,11 @@ namespace Forms9Patch
                 else
                 {
                     if (!_locks.ContainsKey(key))
-                        //_locks[key] = new object();
-                        _locks[key] = new SemaphoreSlim(1, 1);
-                    //lock (_locks[key])
-                    await _locks[key].WaitAsync();
+                        _locks[key] = (DateTime.Now, new SemaphoreSlim(1, 1));
+                    else if (DateTime.Now - _locks[key].Start > TimeSpan.FromSeconds(2))
+                        _locks[key].Lock.Release();
+                    _locks[key] = (DateTime.Now, _locks[key].Lock);
+                    await _locks[key].Lock.WaitAsync();
                     try
                     {
                         //SKBitmap skBitmap = null;
@@ -52,17 +54,21 @@ namespace Forms9Patch
                             var assembly = (Assembly)imageSource.GetValue(ImageSource.AssemblyProperty);
                             var resourceId = key.Substring(4);
 
-                            using (var stream = await P42.Utils.EmbeddedResourceCache.GetStreamAsync(resourceId, assembly, Forms9Patch.Image.EmbeddedResourceImageCacheFolderName))
+                            using (var stream = await P42.Utils.EmbeddedResourceCache.GetStreamAsync(resourceId, assembly, Image.EmbeddedResourceImageCacheFolderName))
                             {
                                 if (stream == null)
                                 {
-                                    Toast.Create("Cannot find EmbeddedResource", "Cannot find EmbeddedResource with Id of [" + resourceId + "] in Assembly [" + assembly + "]");
+                                    if (failAction == FailAction.ShowAlert)
+                                    { 
+                                        using (var toast = Toast.Create("Cannot find EmbeddedResource", "Cannot find EmbeddedResource with Id of [" + resourceId + "] in Assembly [" + assembly + "]"))
+                                        {
+                                            await toast.WaitForPoppedAsync();
+                                        }
+                                    }
+                                    else if (failAction == FailAction.ThrowException)
+                                        throw new Exception("Cannot find EmbeddedResource with Id of [" + resourceId + "] in Assembly [" + assembly + "]");
                                     return null;
                                 }
-                                /*    
-                                using (var skStream = new SKManagedStream(stream))
-                                    skBitmap = SKBitmap.Decode(skStream);
-                                */
                                 f9pImageData = F9PImageData.Create(stream, key);
                             }
                         }
@@ -83,36 +89,13 @@ namespace Forms9Patch
                         }
                         else if (key.StartsWith("file:", StringComparison.Ordinal))  // does this work for Windows or iOS?
                         {
-                            //path = key.Substring(5);
                             var filePath = ((FileImageSource)imageSource).File;
-                            /*
-                            if (File.Exists(filePath))
-                                skBitmap = SKBitmap.Decode(filePath);
-#if __DROID__
-                            else
-                            {
-                                var nativeBitmap = Settings.Context.Resources.GetBitmap(filePath);
-                                skBitmap = nativeBitmap.ToSKBitmap();
-                            }
-#endif
-                            */
                             f9pImageData = F9PImageData.Create(filePath, key);
                         }
                         else
                         {
                             Console.WriteLine("UNABLE TO ACCESS IMAGESOURCE: " + key);
                         }
-                        /*
-                        if (skBitmap != null)
-                        {
-                            f9pImageData = F9PImageData.Create(skBitmap, key);
-
-                            _cache[key] = f9pImageData;
-                            if (!_views.ContainsKey(key))
-                                _views[key] = new List<SkiaRoundedBoxAndImageView>();
-                            _views[key].Add(view);
-                        }
-                        */
                         if (f9pImageData != null)
                         {
                             _cache[key] = f9pImageData;
@@ -123,9 +106,11 @@ namespace Forms9Patch
                     }
                     finally
                     {
-                        _locks[key].Release();
+                        _locks[key].Lock.Release();
                         if ((f9pImageData?.SKBitmap == null || f9pImageData?.SKSvg == null))
                             _locks.Remove(key);
+                        else
+                            _locks[key] = (DateTime.MaxValue, _locks[key].Lock);
                     }
                 }
             }
@@ -138,11 +123,14 @@ namespace Forms9Patch
                     {
                         if (stream == null)
                             return null;
+                        /*
                         using (var skStream = new SKManagedStream(stream))
                         {
                             var skBitmap = SKBitmap.Decode(skStream);
                             f9pImageData = F9PImageData.Create(skBitmap, null);
                         }
+                        */
+                        f9pImageData = F9PImageData.Create(stream, null);
                     }
                 }
                 else
@@ -157,69 +145,57 @@ namespace Forms9Patch
             return f9pImageData;
         }
 
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 
         internal static void ReleaseF9PBitmap(this Xamarin.Forms.ImageSource imageSource, Image view)
+            => ReleaseF9PBitmap(imageSource?.ImageSourceKey(), view);
+
+        internal static void ReleaseF9PBitmap(this F9PImageData f9PImageData, Image view)
+            => ReleaseF9PBitmap(f9PImageData?.Key, view);
+
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+
+        static async Task ReleaseF9PBitmap(string key, Image view)
         {
-            var key = imageSource.ImageSourceKey();
             if (key == null)
                 return;
-            lock (_constructorLock)
+
+            SemaphoreSlim lck = null;
+            if (_locks.ContainsKey(key))
             {
-                if (!_views.ContainsKey(key))
-                    // this happens if there is a failure to load the view
-                    return;
+                lck = _locks[key].Lock;
+                await lck.WaitAsync();
+            }
+
+            int remainingViews = 0;
+            if (_views.ContainsKey(key))
+            {
                 var _clientViews = _views[key];
                 _clientViews?.Remove(view);
-                if (_clientViews.Count > 0)
-                    return;
-                _views.Remove(key);
-                if (_cache.ContainsKey(key))
+                remainingViews = _clientViews.Count;
+                if (remainingViews <= 0)
                 {
-                    var bitmap = _cache[key];
-                    _cache.Remove(key);
-                    bitmap.Dispose();
-                    bitmap = null;
+                    _views.Remove(key);
+                    if (_cache.ContainsKey(key))
+                    {
+                        var bitmap = _cache[key];
+                        _cache.Remove(key);
+
+                        bitmap.Dispose();
+                        bitmap = null;
+                    }
                 }
-                _locks.Remove(key);
             }
+
+            if (remainingViews <= 0)
+                _locks.Remove(key);
+            lck?.Release();
+
         }
         #endregion
 
 
         #region NinePatch parcing
-        /*
-        static public SKLattice ToSKLattice(this RangeLists rangelists, SKBitmap bitmap)
-        {
-            if (rangelists == null)
-                throw new InvalidDataContractException("ToSKLattice cannot be applied to null RangeLists");
-            var result = new SKLattice();
-            result.Bounds = bitmap.Info.Rect;
-            result.Flags = new SKLatticeFlags[rangelists.PatchesX.Count * rangelists.PatchesY.Count];
-            for (int i = 0; i < rangelists.PatchesX.Count * rangelists.PatchesY.Count; i++)
-                result.Flags[i] = SKLatticeFlags.Default;
-
-            var xdivs = new List<int>();
-            for (int i = 0; i < rangelists.PatchesX.Count; i++)
-            {
-                xdivs.Add((int)rangelists.PatchesX[i].Start);
-                //xdivs.Add(Math.Min((int)rangelists.PatchesX[i].End+1, bitmap.Width));
-                xdivs.Add(Math.Min((int)rangelists.PatchesX[i].End + 1, bitmap.Width - 1));
-            }
-            result.XDivs = xdivs.ToArray();
-
-            var ydivs = new List<int>();
-            for (int i = 0; i < rangelists.PatchesY.Count; i++)
-            {
-                ydivs.Add((int)rangelists.PatchesY[i].Start);
-                ydivs.Add(Math.Min((int)rangelists.PatchesY[i].End + 1, bitmap.Height - 1));
-            }
-            result.YDivs = ydivs.ToArray();
-
-
-            return result;
-        }
-        */
-
         static public RangeLists PatchRanges(this SKBitmap bitmap)
         {
             if (bitmap.Info.ColorType != SKColorType.Bgra8888 && bitmap.Info.ColorType != SKColorType.Rgba8888)
@@ -278,70 +254,6 @@ namespace Forms9Patch
                 }
                 capsY.Add(new Range(lastPos, bitmap.Height - 3, lastPixel == SKColors.Black));
             }
-            /*
-                        Stopwatch stopwatch = Stopwatch.StartNew();
-
-                        var capsX = new List<Range>();
-                        int pos = -1;
-                        for (int i = 0; i < bitmap.Width - 2; i++)
-                        {
-                            var pixel = bitmap.GetPixel(i + 1, 0);
-                            if (pixel == SKColors.Black)
-                            {
-                                if (pos == -1)
-                                    pos = i;
-                            }
-                            else if (pixel == 0)
-                            {
-                                if (pos != -1)
-                                {
-                                    var range = new Range(pos, i - 1);
-                                    capsX.Add(range);
-                                    pos = -1;
-                                }
-                            }
-                            else
-                                // this is not a nine-patch;
-                                return null;
-                        }
-                        if (pos != -1)
-                        {
-                            var range = new Range(pos, bitmap.Width - 3);
-                            capsX.Add(range);
-                        }
-
-                        var capsY = new List<Range>();
-                        pos = -1;
-                        for (int i = 0; i < bitmap.Height - 2; i++)
-                        {
-                            var pixel = bitmap.GetPixel(0, i + 1);
-                            if (pixel == SKColors.Black)
-                            {
-                                if (pos == -1)
-                                    pos = i;
-                            }
-                            else if (pixel == 0)
-                            {
-                                if (pos != -1)
-                                {
-                                    var range = new Range(pos, i - 1);
-                                    capsY.Add(range);
-                                    pos = -1;
-                                }
-                            }
-                            else
-                                return null;
-                        }
-                        if (pos != -1)
-                        {
-                            var range = new Range(pos, bitmap.Height - 3);
-                            capsY.Add(range);
-                        }
-
-                        if (capsX.Count < 1 && capsY.Count < 1)
-                            return null;
-*/
-
 
             var margX = null as Range;
             var pos = -1;

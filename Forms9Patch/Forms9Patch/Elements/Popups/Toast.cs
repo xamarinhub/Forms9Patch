@@ -1,12 +1,14 @@
-﻿
-using Xamarin.Forms;
+﻿using Xamarin.Forms;
 using System;
+using System.ComponentModel;
 
 namespace Forms9Patch
 {
     /// <summary>
     /// Toast Popup: Plain and simple
     /// </summary>
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     public class Toast : ModalPopup
     {
         #region Factory
@@ -17,8 +19,8 @@ namespace Forms9Patch
         /// <param name="text"></param>
         /// <param name="popAfter">Will dissappear after popAfter TimeSpan</param>
         /// <returns></returns>
-        public static Toast Create(string title, string text, TimeSpan popAfter = default)
-            => new Toast { Title = title, Text = text, PopAfter = popAfter, IsVisible = true };
+        public static Toast Create(string title, string text, TimeSpan popAfter = default, FeedbackEffect pushedFeedback = FeedbackEffect.Info)
+            => new Toast { Title = title, Text = text, PopAfter = popAfter, PushedFeedback = pushedFeedback, IsVisible = true };
 
         #endregion
 
@@ -69,6 +71,8 @@ namespace Forms9Patch
         }
         #endregion
 
+        public event EventHandler LongPressed;
+
         #endregion
 
 
@@ -77,40 +81,34 @@ namespace Forms9Patch
         {
             FontSize = 22,
             FontAttributes = FontAttributes.Bold,
-            TextColor = (Color)TextColorProperty.DefaultValue,
-            //HorizontalOptions = LayoutOptions.Fill,
+            TextColor = (Color)TextColorProperty.DefaultValue
         };
         readonly Label _textLabel = new Label
         {
             FontSize = 16,
-            TextColor = (Color)TextColorProperty.DefaultValue,
-            //HorizontalOptions = LayoutOptions.Fill,
+            TextColor = (Color)TextColorProperty.DefaultValue
         };
-        /*
-        readonly Button _okButton = new Button
-        {
-            //HorizontalOptions = LayoutOptions.Fill
-        };
-        */
+
+        readonly FormsGestures.Listener listener;
+
+        //Forms9Patch.TargetedMenu targetedMenu;
         #endregion
 
 
-        #region Constructor
+        #region Events
+        /// <summary>
+        /// Occurs when HtmlText wrapped with an action (&lt;a&gt;) tag is tapped.
+        /// </summary>
+        public event EventHandler<ActionTagEventArgs> ActionTagTapped;
+        #endregion
+
+
+        #region Construction / Disposal
         /// <summary>
         /// Initializes a new instance of the <see cref="T:Forms9Patch.Toast"/> class.
         /// </summary>
         public Toast()
         {
-            /*
-            _okButton.BackgroundColor = ButtonBackgroundColor;
-            _okButton.TextColor = ButtonTextColor;
-            _okButton.HtmlText = ButtonText;
-            */
-            //WidthRequest = 200;
-
-            //HeightRequest = 200;
-
-            //_okButton.Tapped += (s, args) => Cancel();
             Content = new StackLayout
             {
                 Children =
@@ -119,11 +117,62 @@ namespace Forms9Patch
                     new ScrollView
                     {
                         Content = _textLabel
-                    },
+                    }
                 }
             };
+            listener = FormsGestures.Listener.For(Content);
+            listener.LongPressing += OnListener_LongPressing;
+            _textLabel.ActionTagTapped += OnTextLabel_ActionTagTapped;
         }
 
+
+        private bool _disposed;
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            if (!_disposed && disposing)
+            {
+                _disposed = true;
+
+                listener.LongPressing -= OnListener_LongPressing;
+                _textLabel.ActionTagTapped -= OnTextLabel_ActionTagTapped;
+                ActionTagTapped = null;
+                listener.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+        #endregion
+
+
+        #region Gesture Handlers
+        private async void OnListener_LongPressing(object sender, FormsGestures.LongPressEventArgs e)
+        {
+            LongPressed?.Invoke(this, new EventArgs());
+            using (var targetedMenu = new TargetedMenu(this) { Segments = { new Segment("Copy") } })
+            {
+                targetedMenu.IsVisible = true;
+                targetedMenu.SegmentTapped += OnTargetedMenu_SegmentTapped;
+                await targetedMenu.WaitForPoppedAsync();
+            }
+        }
+        private void OnTextLabel_ActionTagTapped(object sender, ActionTagEventArgs e)
+        {
+            ActionTagTapped?.Invoke(this, e);
+        }
+
+
+        private void OnTargetedMenu_SegmentTapped(object sender, SegmentedControlEventArgs e)
+        {
+            var entry = new MimeItemCollection
+            {
+                HtmlText = "<H3>" + Title + "</H3><p>" + Text + "</p>",
+                PlainText = Title + "\n" + Text
+            };
+            Clipboard.Entry = entry;
+        }
         #endregion
 
 
@@ -134,52 +183,21 @@ namespace Forms9Patch
         /// <param name="propertyName">Property name.</param>
         protected override void OnPropertyChanged(string propertyName = null)
         {
-            if (!P42.Utils.Environment.IsOnMainThread)
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
             {
-                Device.BeginInvokeOnMainThread(() => OnPropertyChanged(propertyName));
-                return;
-            }
+                base.OnPropertyChanged(propertyName);
 
-            base.OnPropertyChanged(propertyName);
-
-            if (propertyName == TitleProperty.PropertyName)
-                _titleLabel.HtmlText = Title;
-            else if (propertyName == TextProperty.PropertyName)
-                _textLabel.HtmlText = Text;
-            /*
-            else if (propertyName == ButtonTextProperty.PropertyName)
-                _okButton.HtmlText = ButtonText;
-            else if (propertyName == ButtonBackgroundColorProperty.PropertyName)
-                _okButton.BackgroundColor = ButtonBackgroundColor;
-            else if (propertyName == ButtonTextColorColorProperty.PropertyName)
-                _okButton.TextColor = ButtonTextColor;
-                */
-            else if (propertyName == TextColorProperty.PropertyName)
-            {
-                _textLabel.TextColor = TextColor;
-                _titleLabel.TextColor = TextColor;
-            }
-
-        }
-        /*
-        void UpdateOKButton()
-        {
-            if (P42.Utils.Environment.IsOnMainThread)
-            {
-                if (ButtonText != null || (ButtonBackgroundColor != default(Color) && ButtonBackgroundColor != Color.Default) || (ButtonTextColor != default(Color) && ButtonTextColor != Color.Default))
+                if (propertyName == TitleProperty.PropertyName)
+                    _titleLabel.HtmlText = Title;
+                else if (propertyName == TextProperty.PropertyName)
+                    _textLabel.HtmlText = Text;
+                else if (propertyName == TextColorProperty.PropertyName)
                 {
-                    if (!((StackLayout)Content).Children.Contains(_okButton))
-                        ((StackLayout)Content).Children.Add(_okButton);
-                    if (ButtonTextColor != default(Color) && ButtonTextColor != Color.Default)
-                        _okButton.TextColor = Color.Blue;
+                    _textLabel.TextColor = TextColor;
+                    _titleLabel.TextColor = TextColor;
                 }
-                else if (((StackLayout)Content).Children.Contains(_okButton))
-                    ((StackLayout)Content).Children.Remove(_okButton);
-            }
-            else
-                Device.BeginInvokeOnMainThread(UpdateOKButton);
+            });
         }
-        */
         #endregion
     }
 }

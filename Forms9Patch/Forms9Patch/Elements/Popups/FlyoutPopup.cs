@@ -1,7 +1,6 @@
 using System;
+using System.ComponentModel;
 using Xamarin.Forms;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using FormsGestures;
 
 namespace Forms9Patch
@@ -9,6 +8,8 @@ namespace Forms9Patch
     /// <summary>
     /// A popup that enters from the side of the screen and stops at the same side.  Great for notificaitons or menus.
     /// </summary>
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     public class FlyoutPopup : PopupBase
     {
         #region Properties
@@ -61,42 +62,35 @@ namespace Forms9Patch
 
 
         #region Fields
-        Frame _frame;
-        FormsGestures.Listener _listener;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "frame is disposed in the PopupBase via _decorativeContainerView.Dispose()")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Code Quality", "IDE0069:Disposable fields should be disposed", Justification = "frame is disposed in the PopupBase via _decorativeContainerView.Dispose()")]
+        readonly Frame _frame;
+        Listener _listener;
         #endregion
 
 
         #region Constructor / Destructor
-        void Init()
+        /// <summary>
+        /// Construct new FlyoutPopup
+        /// </summary>
+        /// <param name="popAfter">Flyout will dissappear after popAfter</param>
+        public FlyoutPopup(TimeSpan popAfter = default) : base(popAfter: popAfter)
         {
-            _frame = new Forms9Patch.Frame
+            _frame = new Frame
             {
                 Padding = Padding,
                 HasShadow = HasShadow,
                 OutlineColor = OutlineColor,
                 OutlineWidth = OutlineWidth,
-                OutlineRadius = 0,
+                OutlineRadius = OutlineRadius,
                 BackgroundColor = BackgroundColor
             };
             Margin = 0;
             DecorativeContainerView = _frame;
             UpdateBaseLayoutProperties();
-            _listener = FormsGestures.Listener.For(this);
+            _listener = Listener.For(_frame);
             _listener.Swiped += OnSwiped;
         }
-
-        /// <summary>
-        /// Construct new FlyoutPopup
-        /// </summary>
-        /// <param name="retain">Do not Dispose for faster re-rendering of complex content</param>
-        /// <param name="popAfter">Flyout will dissappear after popAfter</param>
-        public FlyoutPopup(bool retain = false, TimeSpan popAfter = default) : base(retain: retain, popAfter: popAfter) => Init();
-
-        /// <summary>
-        /// Construct new FlyoutPopup
-        /// </summary>
-        /// <param name="popAfter">Flyout will dissappear after popAfter</param>
-        public FlyoutPopup(TimeSpan popAfter) : base(popAfter: popAfter) => Init();
 
         bool _disposed;
         /// <summary>
@@ -108,8 +102,8 @@ namespace Forms9Patch
             if (!_disposed && disposing)
             {
                 _disposed = true;
-                if (_listener!=null)
-                _listener.Swiped -= OnSwiped;
+                if (_listener != null)
+                    _listener.Swiped -= OnSwiped;
                 _listener?.Dispose();
                 _listener = null;
             }
@@ -131,14 +125,14 @@ namespace Forms9Patch
 
         void UpdateBaseLayoutProperties()
         {
-            var animation = new Rg.Plugins.Popup.Animations.MoveAnimation();
+            var animation = new Elements.Popups.Core.Animations.MoveAnimation();
             animation.PositionIn = animation.PositionOut = Orientation == StackOrientation.Horizontal
                 ? Alignment == FlyoutAlignment.Start
-                    ? Rg.Plugins.Popup.Enums.MoveAnimationOptions.Left
-                    : Rg.Plugins.Popup.Enums.MoveAnimationOptions.Right
+                    ? Elements.Popups.Core.MoveAnimationOptions.Left
+                    : Elements.Popups.Core.MoveAnimationOptions.Right
                 : Alignment == FlyoutAlignment.Start
-                    ? Rg.Plugins.Popup.Enums.MoveAnimationOptions.Top
-                    : Rg.Plugins.Popup.Enums.MoveAnimationOptions.Bottom;
+                    ? Elements.Popups.Core.MoveAnimationOptions.Top
+                    : Elements.Popups.Core.MoveAnimationOptions.Bottom;
             Animation = animation;
         }
         #endregion

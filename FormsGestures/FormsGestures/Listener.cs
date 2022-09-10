@@ -18,7 +18,6 @@ namespace FormsGestures
         internal static readonly List<Listener> Listeners = new List<Listener>();
 
         readonly VisualElement _element;
-
         /// <summary>
         /// VisualElement that is the focus of this Listener
         /// </summary>
@@ -222,6 +221,7 @@ namespace FormsGestures
             {
                 RaiseEvent<DownUpEventArgs>(_down, args);
                 ExecuteCommand(DownCommand, DownCommandParameter, args);
+                ExecuteCallback(DownCallback, DownCallbackParameter, args);
                 result = args.Handled;
             }
             return result;
@@ -328,6 +328,7 @@ namespace FormsGestures
             {
                 RaiseEvent<DownUpEventArgs>(_up, args);
                 ExecuteCommand(UpCommand, UpCommandParameter, args);
+                ExecuteCallback(UpCallback, UpCallbackParameter, args);
                 result = args.Handled;
             }
             return result;
@@ -434,6 +435,7 @@ namespace FormsGestures
             {
                 RaiseEvent<TapEventArgs>(_tapping, args);
                 ExecuteCommand(TappingCommand, TappingCommandParameter, args);
+                ExecuteCallback(TappingCallback, TappingCallbackParameter, args);
                 result = args.Handled;
             }
             return result;
@@ -540,6 +542,7 @@ namespace FormsGestures
             {
                 RaiseEvent<TapEventArgs>(_tapped, args);
                 ExecuteCommand(TappedCommand, TappedCommandParameter, args);
+                ExecuteCallback(TappedCallback, TappedCallbackParameter, args);
                 result = args.Handled;
             }
             return result;
@@ -646,6 +649,7 @@ namespace FormsGestures
             {
                 RaiseEvent<TapEventArgs>(_doubleTapped, args);
                 ExecuteCommand(DoubleTappedCommand, DoubleTappedCommandParameter, args);
+                ExecuteCallback(DoubleTappedCallback, DoubleTappedCallbackParameter, args);
                 result = args.Handled;
             }
             return result;
@@ -761,6 +765,7 @@ namespace FormsGestures
                 //if (_debugEvents) System.Diagnostics.Debug.WriteLine ("[{0}.{1}] [{2}] [{3}]",this.GetType().Name, FormsGestures.Debug.CurrentMethod() ,_id,_element);
                 RaiseEvent<LongPressEventArgs>(_longPressing, args);
                 ExecuteCommand(LongPressingCommand, LongPressingCommandParameter, args);
+                ExecuteCallback(LongPressingCallback, LongPressingCallbackParameter, args);
                 result = args.Handled;
             }
             return result;
@@ -879,6 +884,7 @@ namespace FormsGestures
                 //if (_debugEvents) System.Diagnostics.Debug.WriteLine ("[{0}.{1}] [{2}] [{3}]",this.GetType().Name, FormsGestures.Debug.CurrentMethod() ,_id,_element);
                 RaiseEvent<LongPressEventArgs>(_longPressed, args);
                 ExecuteCommand(LongPressedCommand, LongPressedCommandParameter, args);
+                ExecuteCallback(LongPressedCallback, LongPressingCallbackParameter, args);
                 result = args.Handled;
             }
             return result;
@@ -987,6 +993,7 @@ namespace FormsGestures
                 //if (_debugEvents) System.Diagnostics.Debug.WriteLine ("[{0}.{1}] [{2}] [{3}]",this.GetType().Name, FormsGestures.Debug.CurrentMethod() ,_id,_element);
                 RaiseEvent<PinchEventArgs>(_pinching, args);
                 ExecuteCommand(PinchingCommand, PinchingCommandParameter, args);
+                ExecuteCallback(PinchingCallback, PinchingCallbackParameter, args);
                 result = args.Handled;
             }
             return result;
@@ -1095,6 +1102,7 @@ namespace FormsGestures
                 //if (_debugEvents) System.Diagnostics.Debug.WriteLine ("[{0}.{1}] [{2}] [{3}]",this.GetType().Name, FormsGestures.Debug.CurrentMethod() ,_id,_element);
                 RaiseEvent<PinchEventArgs>(_pinched, args);
                 ExecuteCommand(PinchedCommand, PinchedCommandParameter, args);
+                ExecuteCallback(PinchedCallback, PinchingCallbackParameter, args);
                 result = args.Handled;
             }
             return result;
@@ -1211,6 +1219,7 @@ namespace FormsGestures
                 //if (_debugEvents) System.Diagnostics.Debug.WriteLine ("[{0}.{1}] [{2}] [{3}]",this.GetType().Name, FormsGestures.Debug.CurrentMethod() ,_id,_element);
                 RaiseEvent<PanEventArgs>(_panning, args);
                 ExecuteCommand(PanningCommand, PanningCommandParameter, args);
+                ExecuteCallback(PanningCallback, PanningCallbackParameter, args);
                 result = args.Handled;
             }
             return result;
@@ -1319,6 +1328,7 @@ namespace FormsGestures
                 //if (_debugEvents) System.Diagnostics.Debug.WriteLine ("[{0}.{1}] [{2}] [{3}]",this.GetType().Name, FormsGestures.Debug.CurrentMethod() ,_id,_element);
                 RaiseEvent<PanEventArgs>(_panned, args);
                 ExecuteCommand(PannedCommand, PannedCommandParameter, args);
+                ExecuteCallback(PannedCallback, PannedCallbackParameter, args);
                 result = args.Handled;
             }
             return result;
@@ -1428,6 +1438,7 @@ namespace FormsGestures
                 //if (_debugEvents) System.Diagnostics.Debug.WriteLine ("[{0}.{1}] [{2}] [{3}]",this.GetType().Name, FormsGestures.Debug.CurrentMethod() ,_id,_element);
                 RaiseEvent<SwipeEventArgs>(_swiped, args);
                 ExecuteCommand(SwipedCommand, SwipedCommandParameter, args);
+                ExecuteCallback(SwipedCallback, SwipedCallbackParameter, args);
                 result = args.Handled;
             }
             return result;
@@ -1535,6 +1546,7 @@ namespace FormsGestures
                 //if (_debugEvents) System.Diagnostics.Debug.WriteLine ("[{0}.{1}] [{2}] [{3}]",this.GetType().Name, FormsGestures.Debug.CurrentMethod() ,_id,_element);
                 RaiseEvent<RotateEventArgs>(_rotating, args);
                 ExecuteCommand(RotatingCommand, RotatingCommandParameter, args);
+                ExecuteCallback(RotatingCallback, RotatingCallbackParameter, args);
                 result = args.Handled;
             }
             return result;
@@ -1642,6 +1654,7 @@ namespace FormsGestures
                 //if (_debugEvents) System.Diagnostics.Debug.WriteLine ("[{0}.{1}] [{2}] [{3}]",this.GetType().Name, FormsGestures.Debug.CurrentMethod() ,_id,_element);
                 RaiseEvent<RotateEventArgs>(_rotated, args);
                 ExecuteCommand(RotatedCommand, RotatedCommandParameter, args);
+                ExecuteCallback(RotatedCallback, RotatingCallbackParameter, args);
                 result = args.Handled;
             }
             return result;
@@ -1748,6 +1761,7 @@ namespace FormsGestures
             {
                 RaiseEvent<RightClickEventArgs>(_rightClicked, args);
                 ExecuteCommand(RightClickedCommand, RightClickedCommandParameter, args);
+                ExecuteCallback(RightClickedCallback, RightClickedCallbackParameter, args);
                 result = args.Handled;
             }
             return result;
@@ -1756,7 +1770,12 @@ namespace FormsGestures
 
 
         #region Command / Event executors
-        void RaiseEvent<T>(EventHandler<T> handler, T args) where T : BaseGestureEventArgs => handler?.Invoke(this, args);
+        void RaiseEvent<T>(EventHandler<T> handler, T args, [System.Runtime.CompilerServices.CallerMemberName] string callerName = null)
+            where T : BaseGestureEventArgs
+        {
+            args.Event = callerName.Substring(2);
+            handler?.Invoke(this, args);
+        }
 
         static void ExecuteCommand(ICommand command, object parameter, BaseGestureEventArgs args)
         {
@@ -1796,23 +1815,21 @@ namespace FormsGestures
         /// <returns></returns>
         public static Listener For(VisualElement element)
         {
-            //foreach (var listener in Listeners)
+            if (element == null)
+                throw new InvalidCastException("element cannot be null");
             for (int i = 0; i < Listeners.Count; i++)
-                if (Listeners[i].Element == element)
+                if (Listeners[i]?.Element == element)
                     return Listeners[i];
             return new Listener(element);
         }
 
-        //static int instances = 0;
-        //int _id=0;
         private Listener(VisualElement element)
         {
-            //_id = instances++;
             _element = element;
             var inserted = false;
             for (int i = Listeners.Count - 1; i >= 0; i--)
             {
-                if (element.IsDescendentOf(Listeners[i].Element))
+                if (Listeners[i]?.Element is VisualElement listeningElement && element.IsDescendentOf(listeningElement))
                 {
                     Listeners.Insert(i + 1, this);
                     inserted = true;
@@ -1823,16 +1840,6 @@ namespace FormsGestures
                 Listeners.Insert(0, this);
             GestureService.For(this);
         }
-
-        /*
-        /// <summary>
-        /// Cancels the active gestures.
-        /// </summary>
-        public static void CancelActiveGestures()
-        {
-            GestureService.Cancel();
-        }
-        */
 
         bool _disposed;
         /// <summary>
@@ -1857,8 +1864,42 @@ namespace FormsGestures
             if (!_disposed && disposing)
             {
                 _disposed = true;
+
+                HandlesDownChanged = null;
+                _down = null;
+                HandlesUpChanged = null;
+                _up = null;
+                HandlesTappingChanged = null;
+                _tapping = null;
+                HandlesTappedChanged = null;
+                _tapped = null;
+                HandlesDoubleTappedChanged = null;
+                _doubleTapped = null;
+                HandlesLongPressingChanged = null;
+                _longPressing = null;
+                HandlesLongPressedChanged = null;
+                _longPressed = null;
+                HandlesPinchingChanged = null;
+                _pinching = null;
+                HandlesPinchedChanged = null;
+                _pinched = null;
+                HandlesPanningChanged = null;
+                _panning = null;
+                HandlesPannedChanged = null;
+                _panned = null;
+                HandlesSwipedChanged = null;
+                _swiped = null;
+                HandlesRotatingChanged = null;
+                _rotating = null;
+                HandlesRotatedChanged = null;
+                _rotated = null;
+                HandlesRightClickedChanged = null;
+                _rightClicked = null;
+
                 Listeners.Remove(this);
                 Disposing?.Invoke(this, EventArgs.Empty);
+                Disposing = null;
+
             }
         }
 

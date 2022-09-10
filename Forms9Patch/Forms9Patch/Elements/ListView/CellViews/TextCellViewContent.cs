@@ -1,6 +1,10 @@
 ﻿using Xamarin.Forms;
+using System.ComponentModel;
+
 namespace Forms9Patch
 {
+    [DesignTimeVisible(true)]
+    [Xamarin.Forms.Internals.Preserve(AllMembers = true)]
     internal class TextCellViewContent : Forms9Patch.Label // Xamarin.Forms.Label //, ICellHeight
     {
 
@@ -22,14 +26,11 @@ namespace Forms9Patch
 
         protected override void OnBindingContextChanged()
         {
-            if (!P42.Utils.Environment.IsOnMainThread)
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
             {
-                Device.BeginInvokeOnMainThread(OnBindingContextChanged);
-                return;
-            }
-
-            base.OnBindingContextChanged();
-            HtmlText = BindingContext?.ToString();
+                base.OnBindingContextChanged();
+                HtmlText = BindingContext?.ToString();
+            });
         }
     }
 }

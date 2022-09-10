@@ -1,7 +1,6 @@
 ﻿using Xamarin.Forms;
 using System;
-using P42.Utils;
-using Xamarin.Forms.Internals;
+using System.ComponentModel;
 using FormsGestures;
 
 namespace Forms9Patch
@@ -9,6 +8,8 @@ namespace Forms9Patch
     /// <summary>
     /// Forms9Patch.Label
     /// </summary>
+    [Preserve(AllMembers = true)]
+    [DesignTimeVisible(true)]
     [ContentProperty(nameof(HtmlText))]
     public class Label : Xamarin.Forms.Label, ILabel, IElement //View, IFontElement
     {
@@ -73,9 +74,8 @@ namespace Forms9Patch
         /// </summary>
         public static readonly BindableProperty HtmlTextProperty = BindableProperty.Create(nameof(HtmlText), typeof(string), typeof(Label), propertyChanging: (bindable, oldValue, newValue) =>
         {
-            if ( bindable is Label label && newValue is string value)
-            //if (Device.RuntimePlatform != Device.UWP && bindable is Label label && newValue is string value)
-                    label.UpdateHtmlText(value);
+            if (bindable is Label label && newValue is string value)
+                label.UpdateHtmlText(value);
         });
         /// <summary>
         /// Gets or sets the formatted text.
@@ -84,18 +84,15 @@ namespace Forms9Patch
         public string HtmlText
         {
             get => (string)GetValue(HtmlTextProperty);
-            set
-            {
-                //if (Device.RuntimePlatform == Device.UWP)
-                //    UpdateHtmlText(value);
-                SetValue(HtmlTextProperty, value);
-            }
+            set => SetValue(HtmlTextProperty, value);
         }
 
         void UpdateHtmlText(string value)
         {
+            //F9PFormattedString?.Dispose();
             if (value != null)
             {
+
                 F9PFormattedString = new HTMLMarkupString(value);
                 Text = null;
             }
@@ -179,7 +176,7 @@ namespace Forms9Patch
         #endregion
 
         #region FittedFontSize property
-        DateTime _lastTimeFittedFontSizeSet = DateTime.MinValue;
+        DateTime _lastTimeFittedFontSizeSet = DateTime.MinValue.AddYears(1);
 
         internal static readonly BindablePropertyKey FittedFontSizePropertyKey = BindableProperty.CreateReadOnly(nameof(FittedFontSize), typeof(double), typeof(Label), -1.0);
         /// <summary>
@@ -254,21 +251,6 @@ namespace Forms9Patch
         static Label()
         {
             Settings.ConfirmInitialization();
-            /*
-            P42.Utils.Debug.ConditionFunc = (obj) =>
-            {
-                //if (obj is string str && str.ToLower().Trim().StartsWith("load to grain angle"))
-                //if (obj is string str && str.StartsWith("H3")) return true;
-                //if (obj is string str && str == "1‐¹/₂\u2006in") return true;
-                if (obj is string str && str == "6‐⁷/₈\u2006in") return true;
-                //if (obj is string str && str == "Blue") return true; 
-                if (obj is Label label)
-                    return P42.Utils.Debug.ConditionFunc(label.HtmlText ?? label.Text);
-                if (obj is IText textObj)
-                    return P42.Utils.Debug.ConditionFunc(textObj.Text);
-                return false;
-            };
-            */
         }
 
 
@@ -305,55 +287,60 @@ namespace Forms9Patch
         /// <param name="propertyName">Property name.</param>
         protected override void OnPropertyChanged(string propertyName = null)
         {
-            if (!P42.Utils.Environment.IsOnMainThread)
+            Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(() =>
             {
-                Device.BeginInvokeOnMainThread(() => OnPropertyChanged(propertyName));
-                return;
-            }
+                if (propertyName == FittedFontSizeProperty.PropertyName)
+                    // required to keep the layout system calm.  
+                    return;
 
-            if (propertyName == FittedFontSizeProperty.PropertyName)
-                // required to keep the layout system calm.  
-                return;
-
-            if (propertyName == HtmlTextProperty.PropertyName)
-            {
-                if (F9PFormattedString != null && F9PFormattedString.ContainsActionSpan)
+                if (propertyName == HtmlTextProperty.PropertyName)
                 {
-                    if (_listener == null)
+                    if (F9PFormattedString != null && F9PFormattedString.ContainsActionSpan)
                     {
-                        _listener = FormsGestures.Listener.For(this);
-                        _listener.Tapped += OnTapped;
-                        _listener.Down += OnDown;
+                        if (_listener == null)
+                        {
+                            _listener = FormsGestures.Listener.For(this);
+                            _listener.Tapped += OnTapped;
+                            _listener.Down += OnDown;
+                        }
+                    }
+                    else if (_listener != null)
+                    {
+                        _listener.Tapped -= OnTapped;
+                        _listener.Down -= OnDown;
+                        _listener.Dispose();
+                        _listener = null;
                     }
                 }
-                else if (_listener != null)
+                else if (propertyName == TextProperty.PropertyName && Text != null)
                 {
-                    _listener.Tapped -= OnTapped;
-                    _listener.Down -= OnDown;
-                    _listener.Dispose();
-                    _listener = null;
+                    if (TextType == TextType.Html)
+                    {
+                        HtmlText = Text;
+                        return;
+                    }
+                    else
+                        HtmlText = null;
                 }
-            }
-            else if (propertyName == TextProperty.PropertyName && Text != null)
-                HtmlText = null;
 
-            // This is crazy!  It appears that UWP is disposing the VisualElementTracker but not unsubscribing to  VisualElementTracker.OnPropertyChanged event handler;
-            try
-            {
-                base.OnPropertyChanged(propertyName);
-            }
-            catch (Exception) { }
+                // This is crazy!  It appears that UWP is disposing the VisualElementTracker but not unsubscribing to  VisualElementTracker.OnPropertyChanged event handler;
+                try
+                {
+                    base.OnPropertyChanged(propertyName);
+                }
+                catch (Exception) { }
 
-            if (propertyName == LinesProperty.PropertyName
-                || propertyName == AutoFitProperty.PropertyName
-                || propertyName == HtmlTextProperty.PropertyName
-                || propertyName == TextProperty.PropertyName
-               )
-                InvalidateMeasure();
+                if (propertyName == LinesProperty.PropertyName
+                    || propertyName == AutoFitProperty.PropertyName
+                    || propertyName == HtmlTextProperty.PropertyName
+                    || propertyName == TextProperty.PropertyName
+                   )
+                    InvalidateMeasure();
+            });
         }
 
         internal void InternalInvalidateMeasure()
-            => InvalidateMeasure();
+            => Xamarin.Essentials.MainThread.BeginInvokeOnMainThread(InvalidateMeasure);
         #endregion
 
 
@@ -361,11 +348,21 @@ namespace Forms9Patch
         /// <param name="label">Label.</param>
         public static explicit operator string(Label label)
             => label?.HtmlText ?? label?.Text;
+
+        /// <summary>
+        /// String representation of Label
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return (string)this;
+        }
         #endregion
 
 
         #region for use by Button and Autofit
         internal bool MinimizeHeight;
+        bool _sizeAllocated;
 
         //internal Action SizeAndAlign;
         internal Func<double, double, Size> RendererSizeForWidthAndFontSize;
@@ -397,20 +394,14 @@ namespace Forms9Patch
         {
             IsDynamicallySized = true;
             SizeRequest result;
-            //if (!_sizeAllocated && Draw != null && Device.RuntimePlatform == Device.UWP)
-            //    result = Draw.Invoke(widthConstraint, heightConstraint);
-            //else
-            result = base.GetSizeRequest(widthConstraint, heightConstraint);
+            // the next three lines are required to get the SegmentedControl in the EmbeddedResourceFontEffectPage to render correctly in iOS
+            // but it appears to be over doing it a bit on Android ... worth more evaluation
+            if (!_sizeAllocated && Draw != null && Device.RuntimePlatform == Device.iOS)
+                result = Draw.Invoke(widthConstraint, heightConstraint);
+            else
+                result = base.GetSizeRequest(widthConstraint, heightConstraint);
             return result;
         }
-
-
-        protected override SizeRequest OnMeasure(double widthConstraint, double heightConstraint)
-        {
-            var result = base.OnMeasure(widthConstraint, heightConstraint);
-            return result;
-        }
-
 
 
         //bool _sizeAllocated;
@@ -422,23 +413,15 @@ namespace Forms9Patch
         protected override void OnSizeAllocated(double width, double height)
         {
             base.OnSizeAllocated(width, height);
-            //_sizeAllocated = true;
+            _sizeAllocated = true;
             Draw?.Invoke(width, height);
         }
 
 
-#pragma warning disable CS0672 // Member overrides obsolete member
-        protected override SizeRequest OnSizeRequest(double widthConstraint, double heightConstraint)
-#pragma warning restore CS0672 // Member overrides obsolete member
-        {
-            var result = base.OnSizeRequest(widthConstraint, heightConstraint);
-            return result;
-        }
 
-        private void OnSizeChanged(object sender, EventArgs e)
-        {
-        }
-
+        /// <summary>
+        /// Because InvalidateMeasure doesn't always work
+        /// </summary>
         public void HardForceLayout()
             => Draw?.Invoke(Width, Height);
 
@@ -459,9 +442,9 @@ namespace Forms9Patch
 
         private void OnDown(object sender, DownUpEventArgs e)
         {
-            if (Device.RuntimePlatform == Device.Android && e.NumberOfTouches == 1)
+            //if (Device.RuntimePlatform == Device.Android && e.NumberOfTouches == 1)
             {
-                var index = IndexAtPoint(e.Touches[0]);
+                var index = IndexAtPoint(e.ElementTouches[0]);
                 foreach (var span in F9PFormattedString._spans)
                 {
                     if (span is ActionSpan actionSpan)
@@ -484,7 +467,7 @@ namespace Forms9Patch
                 return;
             if (e.NumberOfTouches == 1)
             {
-                var index = IndexAtPoint(e.Touches[0]);
+                var index = IndexAtPoint(e.ElementTouches[0]);
                 foreach (var span in F9PFormattedString._spans)
                 {
                     if (span is ActionSpan actionSpan)
